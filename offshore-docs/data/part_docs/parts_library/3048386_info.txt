@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3048386
+Phoenix Contact   : UK 10,3-HESI N
+Category          : Fuse holder (10×38 mm fuses)
+BOM description   : UK 10,3 FUSE HOLDER
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Fuse holder for 10 × 38 mm fuse-links (per IEC 60269-2). 690 V AC, 32 A, single-pole disconnect feed-through. Screw connection, black.
+
+KEY SPECIFICATIONS
+------------------
+Fuse: 10×38 mm ceramic; Nominal voltage: 690 V AC; Nominal current: 32 A; Rated cross section: 16 mm² (1–16 mm²); Mounting: NS 35/7,5 or 35/15; Color: black
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-uk-103-hesi-n-3048386
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3048386/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-uk-103-hesi-n-3048386?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-uk-103-hesi-n-3048386#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-uk-103-hesi-n-3048386#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3048386
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3048386
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

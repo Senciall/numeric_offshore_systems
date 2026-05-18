@@ -1,0 +1,29 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3044115
+Phoenix Contact   : UT 6
+Category          : Feed-through terminal block
+BOM description   : FEED-THROUGH TERMINAL, 41A, GRAY
+Used in (project) : —
+
+DESCRIPTION
+-----------
+Feed-through terminal block (CLIPLINE complete UT series). 1000 V nominal, 41 A nominal, screw connection, 6 mm² rated cross section. Gray housing (older production runs may appear cream/white — same part number).
+
+KEY SPECIFICATIONS
+------------------
+Nominal voltage: 1000 V; Nominal current: 41 A; Rated cross section: 6 mm² (AWG 22–8); Width: 8 mm; Height: 47 mm; Mounting: NS 35/7.5 or 35/15; Color: gray; IEC 60947-7-1; UL94 V0
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/feed-through-terminal-block-ut-6-3044115
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3044115/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/feed-through-terminal-block-ut-6-3044115?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/feed-through-terminal-block-ut-6-3044115#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/feed-through-terminal-block-ut-6-3044115#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3044115
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3044115
+
+NOTES
+-----
+Two colour variants photographed: standard gray (current production) and cream/white (older production era — same part number 3044115). Both labelled 'Typ UT 6, IEC 60947-7-1, 1000V 6mm²'.

@@ -1,0 +1,186 @@
+PLT-SEC-T3-120-FM-UT - Type 3 surge protection device
+Phoenix Contact Item number 2907918
+Source: https://www.phoenixcontact.com/us/products/2907918/pdf
+Captured: May 12, 2026
+
+NOTE: Text content of the auto-generated Phoenix Contact datasheet PDF. For the
+original PDF (with images, dimensional drawings, circuit diagram) and any
+drawings, CAD files, or approval certificates, use links.html in this folder.
+
+================================================================================
+
+Type 2/3 surge protection, consisting of protective plug and base element, with
+integrated status indicator and remote signaling for single-phase power supply networks.
+Nominal voltage: 120 V AC/DC.
+
+Your advantages
+- Surge protection family for universal use with optimum energy coordination from the
+  lightning current arrester to the device protection
+- Easy to maintain due to consistently pluggable protection modules
+- Excellent level of information via mechanical/visual status indicator and remote
+  indication contact
+- Connection options: screw connection and Push-in connection available
+- Optimal additional protection of the industrial power supply for a longer service life
+- 5-year warranty on your QUINT 4 power supply when installed together with PLT-SEC
+
+COMMERCIAL DATA
+---------------
+Item number                       : 2907918
+Packing unit                      : 5 pc
+Minimum order quantity            : 1 pc
+Sales key                         : CL19
+Product key                       : CL14A2
+GTIN                              : 4055626257440
+Weight per piece (incl. packing)  : 96.91 g
+Weight per piece (excl. packing)  : 81.16 g
+Customs tariff number             : 85363030
+Country of origin                 : DE
+
+TECHNICAL DATA
+--------------
+Product type                      : Device protection
+Product family                    : SEC Family
+IEC power supply system           : TN-S / TT
+Type                              : DIN rail module, two-section, divisible
+Number of positions               : 2
+Surge protection fault message    : Optical, remote indicator contact
+
+Insulation characteristics
+Overvoltage category              : III
+Pollution degree                  : 2
+IEC test classification           : II / III
+T2 / T3
+EN type                           : T2 / T3
+Number of ports                   : One
+
+Electrical properties - Indicator/Remote signaling
+Connection name                   : Remote fault indicator contact
+Switching function                : Changeover contact
+Operating voltage                 : 250 V AC / 125 V DC (200 mA DC)
+Operating current                 : 0.5 A AC / 0.5 A DC (75 V DC)
+
+Connection data
+Connection method                 : Screw connection
+Screw thread                      : M3
+Tightening torque                 : 0.5 Nm
+Conductor cross-section flexible  : 0.2 - 2.5 mm^2
+Conductor cross-section rigid     : 0.2 - 4 mm^2
+Conductor cross-section AWG       : 24 - 12
+
+Dimensions
+Width                             : 17.7 mm
+Height                            : 93.4 mm
+Depth                             : 74.5 mm (incl. DIN rail 7.5 mm)
+Horizontal pitch                  : 1 Div.
+
+Material specifications
+Color (Male connector)            : light gray (RAL 7035)
+Color (Base element)              : gray (RAL 7042)
+Flammability rating (UL 94)       : V-0
+CTI value                         : 600
+Insulating / Housing material     : PA 6.6-FR 20% GF / PA 6.6-FR
+
+Protective circuit
+Mode of protection                : L-N, L-PE, N-PE
+Direction of action               : 1L-N & N-PE
+Nominal voltage UN                : 120 V AC (TN-S), 120 V AC (TT)
+Nominal frequency fN              : 50 Hz (60 Hz)
+Max continuous operating voltage UC : 150 V AC
+Rated load current IL             : 26 A (at 30 deg C)
+Protective conductor current IPE  : <= 5 uA
+Standby power consumption PC      : <= 10.6 mVA (UREF); <= 13.5 mVA (UC)
+Reference test voltage UREF       : 132 V AC
+Nominal discharge current In (8/20 us) : 5 kA
+Maximum discharge current Imax (8/20 us) : 10 kA
+Combination wave UOC              : 6 kV
+Voltage protection level Up (L-N) : <= 0.75 kV (at UOC); <= 0.95 kV (at In)
+Voltage protection level Up (L-PE): <= 0.85 kV
+Voltage protection level Up (N-PE): <= 0.85 kV
+
+TOV behavior at UT (L-N)          : 240 V AC (5 s, withstand mode); 240 V AC (120 min)
+TOV behavior at UT (L-PE)         : 1332 V AC (200 ms, safe failure mode)
+TOV behavior at UT (N-PE)         : 1200 V AC (200 ms, safe failure mode)
+Response time tA (L-N)            : <= 25 ns
+Response time tA (L-PE)           : <= 100 ns
+Response time tA (N-PE)           : <= 100 ns
+
+Short-circuit current rating ISCCR : 10 kA AC
+Maximum backup fuse (through wiring): 25 A (gG / B / C)
+Max backup fuse (branch wiring)     : 32 A (gG / B / C)
+
+DC characteristics
+Short-circuit current rating ISCCR : 0.25 kA DC (no additional backup fuse) / 5 kA DC
+                                    (for 20 A gG/B backup fuse)
+Residual voltage Ures (L-N)        : <= 0.68 kV (2 kA), <= 0.75 kV (3 kA),
+                                    <= 0.64 kV (UOC=4 kV)
+Residual voltage Ures (L-PE)       : <= 0.58 kV (2 kA), <= 0.65 kV (3 kA),
+                                    <= 0.75 kV (UOC=4 kV)
+Residual voltage Ures (N-PE)       : <= 0.58 kV (2 kA), <= 0.65 kV (3 kA),
+                                    <= 0.75 kV (UOC=4 kV)
+Maximum continuous operating voltage UC : 150 V DC
+Mode of protection                 : (DC+)-(DC-), (DC+/DC-)-PE
+IEC test classification (IEC 61643-21): D1
+Impulse durability (wire-wire/line-earth) D1 : 500 A
+Pulse discharge current Iimp (10/350 us): 0.5 kA
+
+Environmental and real-life conditions
+Degree of protection              : IP20
+Ambient temperature (operation)   : -40 to 80 deg C
+Ambient temperature (storage)     : -40 to 80 deg C
+Altitude                          : <= 2000 m (operating voltage remote contact <= 250 V)
+                                    <= 6000 m (operating voltage remote contact <= 150 V)
+Permissible humidity (operation)  : 5 to 95 %
+Shock (operation)                 : 30g (Half-sine, 11 ms, 3x +/-X +/-Y +/-Z)
+Vibration (operation)             : 5g (5-500 Hz, 2.5 h, X/Y/Z)
+
+UL specifications
+Maximum continuous operating voltage MCOV : 150 V AC / 150 V DC
+Short-circuit current rating (SCCR)       : 10 kA AC / 5 kA DC
+Voltage protection rating VPR (L-N)       : 700 V
+Voltage protection rating VPR (L-G)       : 700 V
+Voltage protection rating VPR (N-G)       : 900 V
+Voltage protection rating VPR (DC+)-(DC-) : 700 V
+Voltage protection rating VPR (DC+)-G     : 900 V
+Voltage protection rating VPR (DC-)-G     : 900 V
+Nominal discharge current In              : 5 kA
+Nominal voltage                           : 150 V DC
+Rated load current IL                     : 20 A
+Power distribution system                 : Single phase / DC
+Nominal frequency                         : 50/60 Hz
+                                            SPD Type 2 (Open-Type SPD)
+
+UL indicator/remote signaling
+Operating voltage                 : 250 V AC (0.5 A); 12 V DC (4 A);
+                                    24 V DC (2 A); 48 V DC (1 A)
+
+UL connection data
+Tightening torque                 : 4.4 lbf-in
+Conductor cross-section AWG       : 16 - 12
+
+Standards and regulations
+Standards / specifications        : IEC 61643-11 (2011); EN 61643-11 (2012)
+
+Mounting
+Mounting type                     : DIN rail 35 mm
+
+APPROVALS  (download certificates from https://www.phoenixcontact.com/us/products/2907918)
+- IECEE CB Scheme    : NL-51083
+- CCA                : NTR-NL 7676
+- KEMA-KEUR          : 71-103027
+- UL Listed          : FILE E 330181
+- CSA                : 13631
+- cUL Listed         : FILE E 330181
+- UAE-RoHS           : 23-10-88891
+- DNV                : TAE00002U7
+- cUL Recognized     : FILE E 340736
+- UL Recognized      : FILE E 340736
+
+Classifications
+ECLASS-13.0 / 15.0   : 27171203
+ETIM 10.0            : EC000942
+UNSPSC 21.0          : 39121600
+
+Environmental product compliance
+EU RoHS                : Yes, No exemptions
+China RoHS EFUP        : EFUP-E
+EU REACH SVHC          : No substance above 0.1 wt%

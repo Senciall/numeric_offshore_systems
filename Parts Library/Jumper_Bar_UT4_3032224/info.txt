@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3032224
+Phoenix Contact   : FBS 50-6
+Category          : Plug-in bridge (jumper)
+BOM description   : UT-4 JUMPER BAR
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Plug-in bridge, 50 positions, 6.2 mm pitch, 32 A. For CLIPLINE complete terminal blocks (6.2 mm). Red.
+
+KEY SPECIFICATIONS
+------------------
+Positions: 50; Pitch: 6.2 mm; Current: 32 A; Color: red; Pack: 10 pc
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/jumper-fbs-50-6-3032224
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3032224/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/jumper-fbs-50-6-3032224?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/jumper-fbs-50-6-3032224#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/jumper-fbs-50-6-3032224#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3032224
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3032224
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

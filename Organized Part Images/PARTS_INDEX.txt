@@ -1,0 +1,115 @@
+MASTER PARTS INDEX
+============================================================
+Verified: May 2026
+
+[01_Schneider_RPM22BD_Harmony_Relay]
+  Part number   : RPM22BD
+  Product name  : Schneider Electric RPM22BD Harmony Relay
+  Manufacturer  : Schneider Electric
+  Product page  : https://www.se.com/us/en/product/RPM22BD/plugin-relay-harmony-electromechanical-relays-15a-2co-with-led-lockable-test-button-24v-dc/
+  Datasheet     : https://www.se.com/us/en/product/download-pdf/RPM22BD?filename=Schneider+Electric_Harmony-Electromechanical-Relays_RPM22BD.pdf
+
+[02_CBI_Electric_CDC22-24_Contactor]
+  Part number   : CDC22-24
+  Product name  : CBI / American Electrical CDC22-24 DC Contactor
+  Manufacturer  : CBI Electric (distributed by American Electrical, Inc.)
+  Product page  : https://www.americanelectrical.com/item/din-rail-mounted-contactors/direct-current-dc-din-rail-mounted-contactors/cdc22-24-1
+  Datasheet     : https://www.americanelectrical.com/Asset/contactor-spec.pdf
+  Notes         : cbi-electric.com no longer hosts this product page; American Electrical Inc. is the authorized US distributor.
+
+[04_Phoenix_VAL-US-120-40-P_and_GDT-US-NG-40-P]
+  Part number   : 2910335 / 2910342
+  Product name  : Phoenix Contact VAL-US-120/40-P + GDT-US-NG/40-P
+  Manufacturer  : Phoenix Contact
+  Product page 1: https://www.phoenixcontact.com/en-us/products/replacement-plug-val-us-12040-p-2910335
+  Datasheet 1   : https://www.phoenixcontact.com/us/products/2910335/pdf
+  Product page 2: https://www.phoenixcontact.com/en-us/products/replacement-plug-gdt-us-ng40-p-2910342
+  Datasheet 2   : https://www.phoenixcontact.com/us/products/2910342/pdf
+  Notes         : Two-part folder: VAL-US-120/40-P (2910335) and GDT-US-NG/40-P (2910342). Both plug into VALVETRAB US base.
+
+[05_ABB_S202-C0-5_Circuit_Breaker]
+  Part number   : 2CDS252001R0984
+  Product name  : ABB S202-C0.5 Miniature Circuit Breaker
+  Manufacturer  : ABB
+  Product page  : https://new.abb.com/products/2CDS252001R0984/s202-c0-5
+  Datasheet     : https://library.e.abb.com/public/29f4496f68574f05b13d43706c9082d8/2CDS207104P0002_instruction%20manual_202302_300dpi.pdf
+  Notes         : *** ORDER CODE CORRECTED *** Previous folder info listed order code 2CDS252001R0051, which does NOT exist in ABB's catalog. The correct order code for S202-C0.5 (2-pole, C-curve, 0.5 A) is 2CDS252001R0984. ABB does not publish a per-MPN PDF datasheet; the linked PDF is the S200 series instruction manual.
+
+[06_Blue_Sky_Energy_UCM]
+  Part number   : UCM
+  Product name  : Blue Sky Energy / SunForge Universal Communication Module (UCM)
+  Manufacturer  : SunForge LLC (formerly Blue Sky Energy)
+  Product page  : https://sunforgellc.com/product/ucm/
+  Datasheet     : https://sunforgellc.com/wp-content/uploads/2022/11/UCM_DataSheet_Rev-2.0_AP.pdf
+  Notes         : Blue Sky Energy is now SunForge LLC; blueskyenergyinc.com URLs no longer resolve.
+
+[07_Blue_Sky_Energy_IPN-ProRemote]
+  Part number   : IPN-ProRemote-S
+  Product name  : Blue Sky Energy / SunForge IPN ProRemote
+  Manufacturer  : SunForge LLC (formerly Blue Sky Energy)
+  Product page  : https://sunforgellc.com/product/ipn-proremote/
+  Datasheet     : https://sunforgellc.com/wp-content/uploads/2022/04/IPN-ProRemoteS_Data-Sheet-Rev.-2.0_AP.pdf
+  Notes         : Blue Sky Energy is now SunForge LLC.
+
+[08_Blue_Sky_Energy_Solar_Boost_3024iL]
+  Part number   : SB3024iL
+  Product name  : Blue Sky Energy / SunForge Solar Boost 3024iL MPPT Charge Controller
+  Manufacturer  : SunForge LLC (formerly Blue Sky Energy)
+  Product page  : https://sunforgellc.com/product/sb3024il/
+  Datasheet     : https://sunforgellc.com/wp-content/uploads/2022/04/SB3024DiL_Data-Sheet-Rev.-3.0_AP-N.pdf
+  Notes         : Datasheet covers both SB3024iL and SB3024DiL variants. Blue Sky Energy is now SunForge LLC.
+
+[09_Blue_Sky_Energy_Solar_Boost_1524iX]
+  Part number   : SB1524iX
+  Product name  : Blue Sky Energy / SunForge Solar Boost 1524iX MPPT Charge Controller
+  Manufacturer  : SunForge LLC (formerly Blue Sky Energy)
+  Product page  : https://sunforgellc.com/product/sb1524ix/
+  Datasheet     : https://sunforgellc.com/wp-content/uploads/2022/04/SB1524iX-Li_Data-Sheet-Rev.-2.0_AP.pdf
+  Notes         : Datasheet covers both SB1524iX and SB1524iX-Li variants. Blue Sky Energy is now SunForge LLC.
+
+[10_Phoenix_TMC_72C_25A_Circuit_Breaker]
+  Part number   : 1020008
+  Product name  : Phoenix Contact TMC 72C 25A Thermomagnetic Circuit Breaker
+  Manufacturer  : Phoenix Contact
+  Product page  : https://www.phoenixcontact.com/en-us/products/thermomagnetic-device-circuit-breakers-tmc-72c-25a-1020008
+  Datasheet     : https://www.phoenixcontact.com/us/products/1020008/pdf
+
+[11_ICP_DAS_ET-2260_Ethernet_IO_Module]
+  Part number   : ET-2260
+  Product name  : ICP DAS ET-2260 Ethernet I/O Module
+  Manufacturer  : ICP DAS
+  Product page  : https://www.icpdas.com/en/product/ET-2260
+  Datasheet     : https://www.icpdas.com/web/product/download/io_and_unit/ethernet/et2200/document/data_sheet/(P)ET-2260_en.pdf
+
+[12_Moxa_EDS-P510A-8PoE-2GTXSFP]
+  Part number   : EDS-P510A-8PoE-2GTXSFP
+  Product name  : Moxa EDS-P510A-8PoE-2GTXSFP Managed PoE+ Ethernet Switch
+  Manufacturer  : Moxa
+  Product page  : https://www.moxa.com/en/products/industrial-network-infrastructure/ethernet-switches/poe-switches/eds-p510a-series/eds-p510a-8poe-2gtxsfp
+  Datasheet     : https://www.moxa.com/getmedia/9c9d6bec-4262-4d5b-8635-b1a285d2996d/moxa-eds-p510a-series-datasheet-v1.1.pdf
+  Notes         : Datasheet is series-level (covers all EDS-P510A variants).
+
+[13_Moxa_NPort_P5150A_Serial_Device_Server]
+  Part number   : NPort P5150A
+  Product name  : Moxa NPort P5150A Serial Device Server
+  Manufacturer  : Moxa
+  Product page  : https://www.moxa.com/en/products/industrial-edge-connectivity/serial-device-servers/general-device-servers/nport-p5150a-series/nport-p5150a
+  Datasheet     : https://www.moxa.com/getmedia/ecf5ced1-60b5-49d5-b297-0357fc8e582f/moxa-nport-p5150a-series-datasheet-v1.4.pdf
+
+[14_ICP_DAS_PET-7026_Ethernet_IO_Module]
+  Part number   : PET-7026
+  Product name  : ICP DAS PET-7026 PoE Ethernet I/O Module
+  Manufacturer  : ICP DAS
+  Product page  : https://www.icpdas.com/en/product/PET-7026
+  Datasheet     : https://www.icpdas.com/web/product/download/io_and_unit/ethernet/et7000_et7200/document/data_sheet/ET-7x26_PET-7x26_en.pdf
+  Notes         : Shared datasheet covers the entire ET-7x26 / PET-7x26 family.
+
+[15_Phoenix_PLUGTRAB_PT_4_24DC-ST_and_PT_5-HF_12DC-ST]
+  Part number   : 2839240 / 2838775
+  Product name  : Phoenix Contact PLUGTRAB PT 4-24DC-ST + PT 5-HF-12DC-ST
+  Manufacturer  : Phoenix Contact
+  Product page 1: https://www.phoenixcontact.com/en-us/products/surge-protection-for-measurement-and-control-technology-pt-4-24dc-st-2839240
+  Datasheet 1   : https://www.phoenixcontact.com/us/products/2839240/pdf
+  Product page 2: https://www.phoenixcontact.com/en-us/products/surge-protection-for-information-technology-pt-5-hf-12-dc-st-2838775
+  Datasheet 2   : https://www.phoenixcontact.com/us/products/2838775/pdf
+  Notes         : Two-part folder: PT 4-24DC-ST (2839240, MCR signal SPD) and PT 5-HF-12DC-ST (2838775, HF/coax SPD). Both plug-in modules use PT-BE base elements.

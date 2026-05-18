@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+logs/
+server.out.log
+server.err.log
+
+# SQLite transient files (docs.db itself IS tracked for version snapshots)
+data/docs.db-journal
+data/docs.db-wal
+data/docs.db-shm
+data/chrome-headless/
+
+.idea/
+.vscode/
+*.swp
+.DS_Store

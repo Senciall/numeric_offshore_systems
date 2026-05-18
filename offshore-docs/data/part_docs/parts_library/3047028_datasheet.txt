@@ -1,0 +1,64 @@
+D-UT 2,5/10 - End cover
+Phoenix Contact Item number 3047028
+Source: https://www.phoenixcontact.com/en-us/products/end-cover-d-ut-2510-3047028?type=pdf
+Captured: May 12, 2026
+
+NOTE: Text content of the auto-generated Phoenix Contact datasheet PDF. For the
+original PDF (with dimensional drawings) and any drawings, CAD files, or approval
+certificates, use the URLs in links.html in this folder.
+
+================================================================================
+
+End cover, depth: 39.8 mm, width: 2.2 mm, height: 47 mm, color: gray.
+
+COMMERCIAL DATA
+---------------
+Item number               : 3047028
+Packing unit              : 50 pc
+Minimum order quantity    : 50 pc
+Sales key                 : BE19
+Product key               : BE1Z1X
+GTIN                      : 4017918960346
+Weight per piece (incl. packing) : 2.556 g
+Weight per piece (excl. packing) : 2.369 g
+Customs tariff number     : 85389099
+Country of origin         : DE
+
+TECHNICAL DATA
+--------------
+Product type              : End cover
+
+Environmental / real-life conditions
+Ambient temperature (operation)         : -60 to 110 deg C
+Ambient temperature (storage/transport) : -25 to 60 deg C (short-term -60 to +70 deg C)
+Ambient temperature (assembly)          : -5 to 70 deg C
+Ambient temperature (actuation)         : -5 to 70 deg C
+Permissible humidity (operation)        : 20 to 90 %
+Permissible humidity (storage/transport): 30 to 70 %
+
+Material specifications
+Color                                   : gray (RAL 7042)
+Material                                : PA
+Flammability rating (UL 94)             : V0
+Static insulating material in cold      : -60 deg C
+Relative insulation material temperature index (Elec., UL 746 B): 130 deg C
+Fire protection for rail vehicles (DIN EN 45545-2) R22, R23, R24, R26 : HL 1 - HL 3
+Surface flammability NFPA 130 (ASTM E 162): passed
+Specific optical density of smoke NFPA 130 (ASTM E 662): passed
+Smoke gas toxicity NFPA 130 (SMP 800C)  : passed
+
+Dimensions
+Width                     : 2.2 mm
+Height                    : 47 mm
+Depth                     : 39.8 mm
+
+Classifications
+ECLASS-13.0 / 15.0        : 27250301
+ETIM 10.0                 : EC000886
+UNSPSC 21.0               : 39121400
+
+Environmental product compliance
+EU RoHS                   : Yes, No exemptions
+China RoHS EFUP           : EFUP-E
+EU REACH SVHC             : No substance above 0.1 wt%
+EF3.1 Climate Change CO2e : 0.018 kg CO2e

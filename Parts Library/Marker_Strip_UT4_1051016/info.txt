@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 1051016
+Phoenix Contact   : ZB 6,LGS:FORTL.ZAHLEN
+Category          : Zack marker strip
+BOM description   : UT-4 MARKER STRIP / TERMINAL MARKERS, HORIZONTAL, #1-10
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Zack marker strip for 6.2 mm wide terminal blocks (ZB/ZBF series). White strip with horizontal black consecutive numbers (1–10 through 491–500 available).
+
+KEY SPECIFICATIONS
+------------------
+Terminal block width: 6.2 mm; Text field: 10.5 mm × 6.15 mm; 10 markers per strip; Color: white; Print: black; Mounting: latching
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/labeled-terminal-marker-zb-6lgsfortlzahlen-1051016
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/1051016/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/labeled-terminal-marker-zb-6lgsfortlzahlen-1051016?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/labeled-terminal-marker-zb-6lgsfortlzahlen-1051016#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/labeled-terminal-marker-zb-6lgsfortlzahlen-1051016#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=1051016
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=1051016
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

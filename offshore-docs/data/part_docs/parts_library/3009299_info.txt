@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3009299
+Phoenix Contact   : EB 56-18
+Category          : Insertion bridge
+BOM description   : UK 10,3 JUMPER BAR
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Insertion bridge with 56 positions at 18 mm pitch. Used to bridge two terminal points in UK series modular terminal blocks. Gray.
+
+KEY SPECIFICATIONS
+------------------
+Positions: 56; Pitch: 18 mm; Current rating: 76 A; Color: gray; Pack: 5 pc
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/insertion-bridge-eb-56-18-3009299
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3009299/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/insertion-bridge-eb-56-18-3009299?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/insertion-bridge-eb-56-18-3009299#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/insertion-bridge-eb-56-18-3009299#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3009299
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3009299
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

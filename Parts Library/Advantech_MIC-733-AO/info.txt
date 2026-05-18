@@ -1,0 +1,22 @@
+ADVANTECH PART
+========================================
+Part number       : MIC-733-AO
+Product name      : MIC-733-AO
+Manufacturer      : Advantech
+Category          : Fanless modular IPC
+
+DESCRIPTION
+-----------
+Advantech MIC-733-AO fanless modular IPC designed for industrial automation and IoT edge computing. Supports multiple I/O expansion modules with wide-temperature operation for harsh industrial environments.
+
+KEY SPECIFICATIONS
+------------------
+CPU: Intel Atom/Celeron; RAM: up to 8 GB DDR3L; Storage: CFast / mSATA / SATA; I/O: expansion module slots; Wide temp: -20 to 60 C; Power: 24 V DC
+
+IDENTIFICATION CONFIDENCE
+-------------------------
+High — part number MIC-733-AO visible on unit label.
+
+LINKS (open in browser)
+-----------------------
+Product page      : https://www.advantech.com/en-us/products/mic-733-ao

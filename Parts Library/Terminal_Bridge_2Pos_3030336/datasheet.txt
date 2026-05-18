@@ -1,0 +1,76 @@
+FBS 2-6 - Plug-in bridge
+Phoenix Contact Item number 3030336
+Source: https://www.phoenixcontact.com/us/products/3030336/pdf
+Captured: May 12, 2026
+
+NOTE: This is the text content of the auto-generated Phoenix Contact datasheet PDF.
+For the original PDF (with images and dimensional drawings) and any drawings, CAD files,
+or approval certificates, use the URLs in links.html in this folder.
+
+================================================================================
+
+Plug-in bridge, pitch: 6.2 mm, number of positions: 2, nominal current: 32 A, color: red
+
+Your advantages
+- The 2- to 50-pos. jumpers can bridge up to 50 terminal blocks in the two bridge shafts
+  of the CLIPLINE complete system in one step
+
+COMMERCIAL DATA
+---------------
+Item number               : 3030336
+Packing unit              : 50 pc
+Minimum order quantity    : 50 pc
+Sales key                 : BE29
+Product key               : BE2Z2X
+GTIN                      : 4017918188818
+Weight per piece (incl. packing) : 1.92 g
+Weight per piece (excl. packing) : 1.874 g
+Customs tariff number     : 85366990
+Country of origin         : DE
+
+TECHNICAL DATA
+--------------
+Product type              : Plug-in bridge
+Number of positions       : 2
+Pitch                     : 6.2 mm
+
+Electrical properties
+Maximum load current      : 32 A (values can deviate when used in different modular
+                            terminal blocks; see accessories data of the respective block)
+
+Dimensions
+Width                     : 10.7 mm
+Height                    : 23 mm
+Depth                     : 23 mm
+Pitch                     : 6.2 mm
+
+Material specifications
+Color                     : red (RAL 3001)
+Material                  : Copper
+Flammability rating (UL 94): V0
+Insulating material       : PA
+
+Environmental / real-life conditions
+Ambient temperature (operation)            : -60 to 110 deg C
+Ambient temperature (storage/transport)    : -25 to 60 deg C
+Ambient temperature (assembly)             : -5 to 70 deg C
+Ambient temperature (actuation)            : -5 to 70 deg C
+Permissible humidity (operation)           : 20 to 90 %
+Permissible humidity (storage/transport)   : 30 to 70 %
+
+Mounting
+Mounting type             : Plug-in mounting
+
+Drawings (in the original PDF, not text-extractable)
+Schematic diagram: <1 mm. Note: reduction of nominal voltage if FBS bridges are configured
+by breaking out contact tabs or cutting to a specific length.
+
+Classifications
+ECLASS-13.0 / 15.0        : 27250303
+ETIM 10.0                 : EC000489
+UNSPSC 21.0               : 39121400
+
+Environmental product compliance
+EU RoHS                   : Yes, No exemptions
+China RoHS EFUP           : EFUP-E
+EU REACH SVHC             : No substance above 0.1 wt%

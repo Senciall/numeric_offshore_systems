@@ -1,0 +1,20 @@
+SCHNEIDER ELECTRIC PART
+========================================
+Part number       : RPM22BD
+Product name      : Schneider Electric RPM22BD Harmony Relay
+Manufacturer      : Schneider Electric
+Category          : Plug-in electromechanical relay (2 C/O, DIN rail)
+Verified          : Yes (links verified May 2026)
+
+DESCRIPTION
+-----------
+Schneider Electric Harmony / Zelio RPM series plug-in electromechanical relay. 2 C/O (DPDT) contacts, 24 V DC coil. Mounts on DIN-rail socket. 15 A contact rating. LED status indicator and lockable manual test button included. Widely used in industrial control panels for interface and signal switching.
+
+KEY SPECIFICATIONS
+------------------
+Coil: 24 V DC; Contacts: 2 C/O (DPDT); Contact rating: 15 A; Mounting: DIN rail socket; LED indicator: yes; Lockable test button: yes; IEC 61810-1
+
+LINKS
+-----
+Product page      : https://www.se.com/us/en/product/RPM22BD/plugin-relay-harmony-electromechanical-relays-15a-2co-with-led-lockable-test-button-24v-dc/
+Datasheet PDF     : https://www.se.com/us/en/product/download-pdf/RPM22BD?filename=Schneider+Electric_Harmony-Electromechanical-Relays_RPM22BD.pdf

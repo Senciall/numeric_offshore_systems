@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m venv .venv)",
+      "Bash(py --version)",
+      "Bash(where python *)",
+      "Bash(where py *)",
+      "PowerShell($paths = @\\(\"C:\\\\Python311\", \"C:\\\\Python312\", \"C:\\\\Python313\", \"C:\\\\Python310\", \"$env:LOCALAPPDATA\\\\Programs\\\\Python\", \"$env:ProgramFiles\\\\Python311\", \"$env:ProgramFiles\\\\Python312\", \"$env:ProgramFiles\\\\Python313\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { Get-ChildItem $p -Filter \"python.exe\" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 -ExpandProperty FullName } }; Get-Command python.exe -All -ErrorAction SilentlyContinue | Select-Object Source; Get-Command py.exe -ErrorAction SilentlyContinue | Select-Object Source)",
+      "PowerShell($found = @\\(\\); foreach \\($p in @\\(\"$env:LOCALAPPDATA\\\\Programs\\\\Python\", \"C:\\\\Python311\", \"C:\\\\Python312\", \"C:\\\\Python313\", \"C:\\\\Python310\", \"$env:ProgramFiles\\\\Python311\", \"$env:ProgramFiles\\\\Python312\", \"$env:ProgramFiles\\\\Python313\", \"$env:ProgramFiles\\(x86\\)\\\\Python311\", \"$env:ProgramFiles\\(x86\\)\\\\Python312\"\\)\\) { if \\(Test-Path $p\\) { $found += \\(Get-ChildItem $p -Filter \"python.exe\" -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName\\) } }; \"Found:\"; $found; \"---\"; \"PATH python:\"; \\(Get-Command python.exe -All -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\\))",
+      "PowerShell(@\\(\"conda\", \"python3\", \"wsl\"\\) | ForEach-Object { $cmd = Get-Command $_ -ErrorAction SilentlyContinue; if \\($cmd\\) { \"$\\($_\\): $\\($cmd.Source\\)\" } else { \"$\\($_\\): not found\" } }; \"---\"; if \\(Test-Path \"$env:USERPROFILE\\\\miniconda3\\\\python.exe\"\\) { \"miniconda: $env:USERPROFILE\\\\miniconda3\\\\python.exe\" }; if \\(Test-Path \"$env:USERPROFILE\\\\anaconda3\\\\python.exe\"\\) { \"anaconda: $env:USERPROFILE\\\\anaconda3\\\\python.exe\" })",
+      "Bash(\"/c/Users/danie/miniconda3/python.exe\" --version)",
+      "Bash(\"/c/Users/danie/miniconda3/python.exe\" -m venv .venv)",
+      "Bash(./.venv/Scripts/python.exe -m pip install -q -r backend/requirements.txt)",
+      "Bash(\"c:/Users/danie/OneDrive/Documentos/numeric_knowledge_hub/offshore-docs/.venv/Scripts/python.exe\" -m pip install -q -r \"c:/Users/danie/OneDrive/Documentos/numeric_knowledge_hub/offshore-docs/backend/requirements.txt\")",
+      "Bash(\"../.venv/Scripts/python.exe\" -m uvicorn main:app --host 127.0.0.1 --port 8765 --log-level info)",
+      "Bash(curl -fsS http://127.0.0.1:8765/api/health)",
+      "Bash(c:/Users/danie/OneDrive/Documentos/numeric_knowledge_hub/offshore-docs/.venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -sS -w '\\\\nstatus=%{http_code}\\\\n' -X POST http://127.0.0.1:8765/api/platforms -H 'Content-Type: application/json' -d '{\"name\":\"\"}')",
+      "Bash(\"../.venv/Scripts/python.exe\" -m uvicorn main:app --host 127.0.0.1 --port 8765 --log-level warning)",
+      "Bash(curl -sS -D - -o /tmp/index.html http://127.0.0.1:8765/)",
+      "Bash(curl -sS -o /tmp/styles.css -w \"status=%{http_code} ctype=%{content_type} size=%{size_download}\\\\n\" http://127.0.0.1:8765/static/styles.css)",
+      "Bash(curl -sS -o /tmp/app.js -w \"status=%{http_code} ctype=%{content_type} size=%{size_download}\\\\n\" http://127.0.0.1:8765/static/app.js)",
+      "Read(//tmp/**)",
+      "Bash(curl -sS -o /dev/null -w \"drawflow.min.js: %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://127.0.0.1:8765/static/lib/drawflow/drawflow.min.js)",
+      "Bash(curl -sS -o /dev/null -w \"drawflow.min.css: %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://127.0.0.1:8765/static/lib/drawflow/drawflow.min.css)",
+      "Bash(curl -sS http://127.0.0.1:8765/)",
+      "Bash(\"../.venv/Scripts/python.exe\" -m uvicorn main:app --host 127.0.0.1 --port 8000 --log-level warning)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\danie\\\\OneDrive\\\\Documentos\\\\numeric_knowledge_hub\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\danie\\\\OneDrive\\\\Documentos\\\\numeric_knowledge_hub\\\\Parts Library\" -Directory | ForEach-Object { $name = $_.Name; $files = Get-ChildItem $_.FullName | Select -ExpandProperty Name; Write-Output \"$name`: $\\($files -join ', '\\)\" })",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\danie\\\\OneDrive\\\\Documentos\\\\numeric_knowledge_hub\\\\offshore-docs\\\\backend\" -Filter \"*.py\" -Type File)",
+      "Bash(Select-Object Name)",
+      "Bash(python import_parts_library.py)",
+      "Bash(python -c ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\danie\\\\OneDrive\\\\Documentos\\\\numeric_knowledge_hub\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(git config *)",
+      "Bash(git --version)"
+    ]
+  }
+}

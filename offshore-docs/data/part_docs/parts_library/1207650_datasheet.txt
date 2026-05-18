@@ -1,0 +1,71 @@
+NS 35/ 7,5 PERF 500MM - DIN rail perforated
+Phoenix Contact Item number 1207650
+Source: https://www.phoenixcontact.com/us/products/1207650/pdf
+Captured: May 12, 2026
+
+NOTE: This is the text content of the auto-generated Phoenix Contact datasheet PDF.
+For the original PDF (with dimensional drawings) and any drawings, CAD files,
+or approval certificates, use the URLs in links.html in this folder.
+
+================================================================================
+
+DIN rail perforated, acc. to EN 60715, length: 500 mm, material: Steel, galvanized,
+passivated with a thick layer, mounting type: Standard profile, color: silver.
+
+Current dimensional tolerances:
+- Profile tolerance (due to burr/sharp edges): +/- 0.5 mm
+- Initial dimension: +/- 0.5 mm
+- Hole pattern: +/- 0.5 mm
+- Hole position: +/- 0.5 mm
+
+Minimum rail length: Unperforated > 20 mm; Perforated > 100 mm
+Last punching at Phoenix Contact: < 1750 mm
+
+COMMERCIAL DATA
+---------------
+Item number               : 1207650
+Packing unit              : 1 pc
+Minimum order quantity    : 20 pc
+Sales key                 : BH84
+Product key               : BH8422
+GTIN                      : 4046356366496
+Weight per piece (incl. packing) : 162.7 g
+Weight per piece (excl. packing) : 155 g
+Customs tariff number     : 72166190
+Country of origin         : DE
+
+TECHNICAL DATA
+--------------
+Product type              : DIN rail
+
+Dimensions
+Width                     : 35 mm
+Hole width                : 15 mm
+Hole height               : 6.2 mm
+Depth                     : 7.5 mm
+Length                    : 500 mm
+Drill hole spacing        : 25 mm
+
+Material specifications
+Color                     : silver
+Material                  : Steel
+Coating                   : galvanized, passivated with a thick layer
+
+Standards and regulations
+Connection per standard   : IEC / EN
+Tests acc. to             : EN 60715
+
+Electrical tests
+Short-time withstand current
+Equivalent E-Cu cross-section : 16 mm^2
+Short-time current resistance 1s : 1.92 kA
+
+Classifications
+ECLASS-13.0 / 15.0        : 27400602
+ETIM 10.0                 : EC001285
+UNSPSC 21.0               : 39121700
+
+Environmental product compliance
+EU RoHS                   : Yes, No exemptions
+China RoHS EFUP           : EFUP-E
+EU REACH SVHC             : No substance above 0.1 wt%

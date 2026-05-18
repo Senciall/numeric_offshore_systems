@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 2907918
+Phoenix Contact   : PLT-SEC-T3-120-FM-UT
+Category          : Surge protection device (Type 3)
+BOM description   : SURGE PROTECTOR
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Type 2/3 surge protection device, plug-in base + protective plug with integrated status indicator and remote signaling. For single-phase 120 V power supply networks. DIN rail mount.
+
+KEY SPECIFICATIONS
+------------------
+Nominal voltage: 120 V AC/DC; MCOV: 150 V; Imax: 10 kA; Conductors: L/N/PE; Width: 17.7 mm; Mounting: NS 35 DIN rail; IP20; Status indicator + remote signaling
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/device-protection-plt-sec-t3-120-fm-ut-2907918
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/2907918/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/device-protection-plt-sec-t3-120-fm-ut-2907918?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/device-protection-plt-sec-t3-120-fm-ut-2907918#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/device-protection-plt-sec-t3-120-fm-ut-2907918#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=2907918
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=2907918
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

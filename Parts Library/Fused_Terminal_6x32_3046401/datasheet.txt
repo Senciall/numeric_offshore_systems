@@ -1,0 +1,147 @@
+UT 6-HESI (6,3X32) - Fuse modular terminal block
+Phoenix Contact Item number 3046401
+Source: https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-ut-6-hesi-63x32-3046401?type=pdf
+Captured: May 12, 2026
+
+NOTE: Text content of the auto-generated Phoenix Contact datasheet PDF. For the
+original PDF (with images, dimensional drawings, circuit diagram) and any drawings,
+CAD files, or approval certificates, use the URLs in links.html in this folder.
+
+================================================================================
+
+Fuse modular terminal block, fuse type: Glass/ceramics, fuse type: G / 6,3 x 32,
+nominal voltage: 630 V, nominal current: 10 A, connection method: Screw connection,
+Rated cross section: 6 mm^2, cross section: 0.2 - 10 mm^2, mounting type: NS 35/7,5,
+NS 35/15, color: black.
+
+Your advantages
+- Globally recognized: internationally proven screw connection
+- Maintenance-free and vibration-resistant thanks to the patented Reakdyn principle
+- Easy integration and replacement of fuses with the lever element
+- Easy checking of fuses with integrated test pick-offs
+- Long-term stable connections with high-quality materials
+- Maximum efficiency in the smallest space - integrated level bridging
+
+NOTE: Fuse-link not supplied as standard.
+
+COMMERCIAL DATA
+---------------
+Item number                       : 3046401
+Packing unit                      : 50 pc
+Minimum order quantity            : 50 pc
+Sales key                         : BE01
+Product key                       : BE1134
+GTIN                              : 4046356055802
+Weight per piece (incl. packing)  : 24.68 g
+Weight per piece (excl. packing)  : 24.68 g
+Customs tariff number             : 85369095
+Country of origin                 : PL
+
+TECHNICAL DATA
+--------------
+Product type                      : Fuse terminal block
+Product family                    : UT
+Area of application               : Railway industry / Machine building / Plant engineering
+Number of connections             : 2
+Number of rows                    : 1
+Potentials                        : 1
+
+Insulation characteristics
+Overvoltage category              : III
+Degree of pollution               : 3
+
+Electrical properties
+Fuse type                         : Glass / ceramics
+Rated surge voltage               : 6 kV
+Maximum power dissipation (nominal): 1.31 W
+Fuse                              : G / 6,3 x 32
+Maximum current (single)          : 10 A
+Maximum power dissipation:
+ - single, overload                : max 1.6 W
+ - interconnected, overload        : max 1.6 W
+ - single, short circuit           : max 4 W
+ - interconnected, short circuit   : max 2.5 W
+
+Connection data
+Number of connections per level   : 2
+Nominal cross section             : 6 mm^2
+Level / above / below             : 1 / 1 / 1
+Connection method                 : Screw connection
+Screw thread                      : M4
+Tightening torque                 : 1.5 - 1.8 Nm
+Stripping length                  : 10 mm
+Internal cylindrical gage         : A5
+Connection per standard           : IEC 60947-7-3
+Conductor cross-section rigid     : 0.2 - 10 mm^2
+Cross section AWG (rigid)         : 24 - 8
+Conductor cross-section flexible  : 0.2 - 10 mm^2
+Cross section AWG (flexible)      : 24 - 8
+Cross-section flex ultrasound-compressed : 0.34 - 10 mm^2
+AWG flex ultrasound-compressed    : 22 - 8
+Cross-section flex (ferrule, no plastic sleeve): 0.25 - 6 mm^2
+Cross-section flex (ferrule, plastic sleeve)   : 0.25 - 6 mm^2
+2 conductors same cross-section (rigid)        : 0.2 - 2.5 mm^2
+2 conductors same cross-section (flexible)     : 0.2 - 2.5 mm^2
+2 conductors flex, ferrule no plastic          : 0.25 - 1.5 mm^2
+2 conductors flex, TWIN ferrule plastic        : 0.5 - 4 mm^2
+Nominal cross section             : 6 mm^2
+Nominal current                   : 10 A
+Maximum load current              : 10 A (determined by fuse)
+Nominal voltage                   : 630 V
+
+Dimensions
+Width                             : 8.2 mm
+Height                            : 57.8 mm
+Depth on NS 35/7,5                : 75.6 mm
+Depth on NS 35/15                 : 83.1 mm
+
+Material specifications
+Color                             : black (RAL 9005)
+Flammability rating (UL 94)       : V0
+Insulating material group         : I
+Insulating material               : PA
+Static insulating material in cold: -60 deg C
+Temperature index (DIN EN 60216-1): 125 deg C
+Relative insulation material temp index (UL 746 B): 130 deg C
+Fire protection rail vehicles (DIN EN 45545-2) R22-R26 : HL 1 - HL 3
+Calorimetric heat release NFPA 130 (ASTM E 1354) : 27.5 MJ/kg
+Surface flammability NFPA 130 (ASTM E 162)       : passed
+Specific optical density of smoke NFPA 130       : passed
+Smoke gas toxicity NFPA 130 (SMP 800C)           : passed
+
+Mechanical properties
+Open side panel                   : No
+
+Environmental and real-life conditions
+Ambient temperature (operation)   : -60 to 110 deg C
+Ambient temperature (storage)     : -25 to 60 deg C (short-term: -60 to +70 deg C)
+Ambient temperature (assembly)    : -5 to 70 deg C
+Ambient temperature (actuation)   : -5 to 70 deg C
+Permissible humidity (operation)  : 20 to 90 %
+Permissible humidity (storage)    : 30 to 70 %
+
+Standards / Mounting
+Connection per standard           : IEC 60947-7-3
+Mounting type                     : NS 35/7,5; NS 35/15
+
+APPROVALS (download certificates from https://www.phoenixcontact.com/us/products/3046401)
+- DNV               : TAE00001S9
+- CSA               : 13631
+- IECEE CB Scheme   : NL-23159_A1  (250 V / 10 A)
+- EAC               : KZ7500651131219505
+- cULus Recognized  : E60425
+    - B/C: 600 V / 10 A / AWG 24-8 (Disconnect terminal: 600 V / 16 A / AWG 24-8)
+- KEMA-KEUR         : 71-104946  (250 V / 10 A)
+- CSA               : 13631
+
+Classifications
+ECLASS-13.0 / 15.0  : 27250113
+ETIM 10.0           : EC000899
+UNSPSC 21.0         : 39121400
+
+Environmental product compliance
+EU RoHS                  : Yes; Exemption 6(c)
+China RoHS EFUP          : EFUP-50
+EU REACH SVHC            : Lead (CAS 7439-92-1)
+SCIP                     : 5d1c90a7-3be4-4539-80dc-e3ca354a1ade
+EF3.1 Climate Change CO2e: 0.039 kg CO2e

@@ -1,0 +1,22 @@
+ADVANTECH PART
+========================================
+Part number       : AIIS-3411P
+Product name      : AIIS-3411P
+Manufacturer      : Advantech
+Category          : Compact vision system
+
+DESCRIPTION
+-----------
+Advantech compact vision system for industrial inspection and machine vision workloads. Indexed from the project parts list; add product photos or datasheets when available.
+
+KEY SPECIFICATIONS
+------------------
+Type: compact vision system; Manufacturer: Advantech; Part number: AIIS-3411P
+
+IDENTIFICATION CONFIDENCE
+-------------------------
+Medium - part number is present in the project parts index, but no local product image or datasheet folder was present.
+
+LINKS (open in browser)
+-----------------------
+Product page      : N/A

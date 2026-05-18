@@ -1,0 +1,24 @@
+SUNFORGE LLC (FORMERLY BLUE SKY ENERGY) PART
+========================================
+Part number       : IPN-ProRemote-S
+Product name      : Blue Sky Energy / SunForge IPN ProRemote
+Manufacturer      : SunForge LLC (formerly Blue Sky Energy)
+Category          : Remote display / system controller
+Verified          : Yes (links verified May 2026)
+
+DESCRIPTION
+-----------
+Wall-mounted remote display and system controller for Blue Sky Energy / SunForge Solar Boost iL/iX series MPPT charge controllers. Provides full system monitoring, battery state-of-charge, charge stage indication, amp-hour and watt-hour logging, and configuration of charge parameters via the IPN bus.
+
+KEY SPECIFICATIONS
+------------------
+IPN bus interface; LCD display + buttons; Battery monitoring (SoC, Ah, Wh); Compatible with Solar Boost 1524iX, 2512iX, 3024iL, 3024DiL; Flush or surface mount
+
+LINKS
+-----
+Product page      : https://sunforgellc.com/product/ipn-proremote/
+Datasheet PDF     : https://sunforgellc.com/wp-content/uploads/2022/04/IPN-ProRemoteS_Data-Sheet-Rev.-2.0_AP.pdf
+
+NOTES
+-----
+Blue Sky Energy is now SunForge LLC.

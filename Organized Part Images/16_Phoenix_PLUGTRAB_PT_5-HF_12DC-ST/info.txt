@@ -1,0 +1,24 @@
+PHOENIX CONTACT PART
+========================================
+Part number       : 2838775
+Product name      : Phoenix Contact PLUGTRAB PT 5-HF-12 DC-ST HF Surge Protection Plug
+Manufacturer      : Phoenix Contact
+Category          : Pluggable HF surge protection for information / data signals - 5 lines, 12 V DC
+Verified          : Yes (links verified May 2026)
+
+DESCRIPTION
+-----------
+Phoenix Contact PLUGTRAB PT 5-HF-12 DC-ST (item 2838775) is a pluggable surge protection device optimized for high-frequency (HF) data and information-technology signal circuits. 5-line protection at continuous operating voltage UC = 14 V DC and nominal signal current IN = 450 mA, with low capacitance suitable for higher data rates. Plugs into a PT-BE/S base element on a 35 mm DIN rail; replace without disconnecting field wiring.
+
+KEY SPECIFICATIONS
+------------------
+Lines: 5; UC: 14 V DC; UN: 12 V DC; IN: 450 mA; In (8/20 us): 5 kA; Up: < 35 V (line/line), < 600 V (line/PE); Status indicator: mechanical disconnect indicator; Mounts on PT-BE base; W 6.2 mm per plug
+
+LINKS
+-----
+Product page      : https://www.phoenixcontact.com/en-us/products/surge-protection-for-information-technology-pt-5-hf-12-dc-st-2838775
+Datasheet PDF     : https://www.phoenixcontact.com/us/products/2838775/pdf
+
+NOTES
+-----
+Pluggable module - requires a Phoenix Contact PT-BE / PT-BE/S base element (sold separately) to mount and wire. Usually used together with PT 4-24DC-ST (item 2839240) on the same DIN rail in MCR/control panels.

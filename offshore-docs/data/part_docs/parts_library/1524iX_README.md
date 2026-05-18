@@ -1,0 +1,27 @@
+﻿# SB1524iX - Blue Sky Energy / SunForge Solar Boost 1524iX MPPT Charge Controller
+
+**Part number:** `SB1524iX`  
+**Manufacturer:** SunForge LLC (formerly Blue Sky Energy)  
+**Category:** MPPT solar charge controller (12/24 V, 15 A)  
+**Verified:** Yes (links verified May 2026)
+
+## Description
+Compact MPPT solar charge controller, 12 V or 24 V battery operation (auto-detect), 15 A maximum charge current. IPN bus for networked monitoring (IPN ProRemote / UCM). Suitable for small off-grid PV systems and lithium-compatible variants (SB1524iX-Li).
+
+## Key specifications
+Battery: 12 V / 24 V (auto); Max charge current: 15 A; Max PV input: ~250 W @12V / 450 W @24V; MPPT efficiency: typ. 99 percent; IPN bus: yes
+
+## Links
+
+| Resource | URL |
+|---|---|
+| Product page | https://sunforgellc.com/product/sb1524ix/ |
+| Datasheet PDF | https://sunforgellc.com/wp-content/uploads/2022/04/SB1524iX-Li_Data-Sheet-Rev.-2.0_AP.pdf |
+
+## Notes
+Datasheet covers both SB1524iX and SB1524iX-Li variants. Blue Sky Energy is now SunForge LLC.
+
+> Open `links.html` for clickable buttons.
+
+## Photo
+![Blue_Sky_Energy_Solar_Boost_1524iX](<SB1524-2.png>)

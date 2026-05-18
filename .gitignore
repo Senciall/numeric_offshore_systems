@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Logs (transient runtime output)
+**/logs/
+**/server.out.log
+**/server.err.log
+*.log
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Headless browser scratch dir (regenerated each run)
+offshore-docs/data/chrome-headless/
+
+# SQLite transient files (the main docs.db IS tracked — see below)
+offshore-docs/data/docs.db-journal
+offshore-docs/data/docs.db-wal
+offshore-docs/data/docs.db-shm
+
+# Explicitly TRACKED (overrides parent ignores so the part library state
+# is captured in every version snapshot):
+#   offshore-docs/data/docs.db
+#   offshore-docs/data/files/
+#   offshore-docs/data/icons/
+#   offshore-docs/data/part_docs/
+#   Organized Part Images/
+#   Parts Library/
+#   Ready Images/

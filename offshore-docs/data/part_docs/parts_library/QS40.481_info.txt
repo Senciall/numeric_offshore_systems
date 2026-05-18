@@ -1,0 +1,22 @@
+PULS PART
+========================================
+Part number       : QS40.481
+Product name      : QS40.481
+Manufacturer      : PULS
+Category          : DIN rail power supply
+
+DESCRIPTION
+-----------
+PULS DIMENSION Q-Series single-phase DIN rail power supply. High efficiency, compact form factor for 24 V DC industrial panel applications.
+
+KEY SPECIFICATIONS
+------------------
+Input: 100–240 V AC; Output: 24 V DC; DIN rail mount: 35 mm; Series: DIMENSION Q
+
+IDENTIFICATION CONFIDENCE
+-------------------------
+High — part number QS40 and electrical ratings visible on label; full order number QS40.481 verified from product page.
+
+LINKS (open in browser)
+-----------------------
+Product page      : https://products.pulspower.com/us/qs40-481.html

@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3030336
+Phoenix Contact   : FBS 2-6
+Category          : Plug-in bridge (jumper)
+BOM description   : PLUG-IN TERMINAL BRIDGE, 2 POS, 32A
+Used in (project) : HM
+
+DESCRIPTION
+-----------
+Plug-in bridge, 2 positions, 6.2 mm pitch, 32 A. For CLIPLINE complete terminal blocks. Red copper bridge with polyamide insulator.
+
+KEY SPECIFICATIONS
+------------------
+Positions: 2; Pitch: 6.2 mm; Current: 32 A; Color: red; Width: 10.7 mm; H × D: 23 × 23 mm; Pack: 50 pc
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/jumper-fbs-2-6-3030336
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3030336/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/jumper-fbs-2-6-3030336?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/jumper-fbs-2-6-3030336#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/jumper-fbs-2-6-3030336#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3030336
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3030336
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

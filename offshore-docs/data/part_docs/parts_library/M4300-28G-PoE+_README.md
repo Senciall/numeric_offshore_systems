@@ -1,0 +1,23 @@
+# M4300-28G-PoE+ — M4300-28G-PoE+
+
+**Manufacturer:** NETGEAR
+**Part number:** `M4300-28G-PoE+`
+**Category:** Fully managed PoE+ switch
+
+## Description
+NETGEAR M4300 series fully managed stackable PoE+ switch with 28 Gigabit ports and 1000 W PoE budget. Supports advanced L3 routing, stacking, and comprehensive QoS for enterprise and AV-over-IP applications.
+
+## Key specifications
+- Ports: 24× GbE PoE+ + 4× SFP+
+- PoE budget: 1000 W
+- Management: full L3
+- Stack: yes
+- SKUs: GSM4328PA / GSM4328PB
+
+## Identification confidence
+> High — front label reads M4300-28G-PoE+; PSU variant (GSM4328PA vs GSM4328PB) not confirmed from photo.
+
+## Links
+| Resource | URL |
+|---|---|
+| Product page | https://www.netgear.com/business/wired/switches/fully-managed/m4300-28g-poe-plus-1000w-psu/ |

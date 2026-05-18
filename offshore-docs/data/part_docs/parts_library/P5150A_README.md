@@ -1,0 +1,24 @@
+﻿# NPort P5150A - Moxa NPort P5150A Serial Device Server
+
+**Part number:** `NPort P5150A`  
+**Manufacturer:** Moxa  
+**Category:** 1-port serial-to-Ethernet device server with PoE  
+**Verified:** Yes (links verified May 2026)
+
+## Description
+Moxa NPort P5150A 1-port RS-232/422/485 serial device server with built-in 802.3af PoE. Software-selectable serial mode, 10/100 Mbps Ethernet, supports TCP Server/Client, UDP, Real COM, Pair Connection, Ethernet Modbus to serial Modbus gateway. IP30 metal housing, DIN-rail mount.
+
+## Key specifications
+Serial: 1x RS-232/422/485 software-selectable, DB9 male, 50 bps to 921.6 kbps; Ethernet: 1x 10/100BaseT(X) RJ45 with PoE 802.3af; Operating modes: Real COM, TCP Server/Client, UDP, Pair Connection, Modbus gateway; IP30; -40 to +75 C T-model available
+
+## Links
+
+| Resource | URL |
+|---|---|
+| Product page | https://www.moxa.com/en/products/industrial-edge-connectivity/serial-device-servers/general-device-servers/nport-p5150a-series/nport-p5150a |
+| Datasheet PDF | https://www.moxa.com/getmedia/ecf5ced1-60b5-49d5-b297-0357fc8e582f/moxa-nport-p5150a-series-datasheet-v1.4.pdf |
+
+> Open `links.html` for clickable buttons.
+
+## Photo
+![Moxa_NPort_P5150A_Serial_Device_Server](<71TIRUAR2lL._AC_UL495_SR435,495_.jpg>)

@@ -1,0 +1,22 @@
+MEAN WELL PART
+========================================
+Part number       : SDR-120-24
+Product name      : SDR-120-24
+Manufacturer      : Mean Well
+Category          : DIN rail power supply
+
+DESCRIPTION
+-----------
+Mean Well industrial DIN rail power supply, 120 W, 24 V DC / 5 A output. Slim form factor suitable for compact panels.
+
+KEY SPECIFICATIONS
+------------------
+Output: 24 V DC / 5 A; Power: 120 W; Input: 85–264 V AC; Mount: DIN 35 mm; Certifications: UL, CE
+
+IDENTIFICATION CONFIDENCE
+-------------------------
+High — part number SDR-120-24 and 24V 5A output visible on label.
+
+LINKS (open in browser)
+-----------------------
+Product page      : https://www.meanwell.com/Upload/PDF/SDR-120/SDR-120-SPEC.PDF

@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 0800886
+Phoenix Contact   : E/NS 35 N
+Category          : End bracket
+BOM description   : END STOP
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+End bracket (end clamp) for NS 35 DIN rails. Screw mounted, 9.5 mm width, gray polyamide. UL94 V-0.
+
+KEY SPECIFICATIONS
+------------------
+Width: 9.5 mm; Height: 48.6 mm; Depth: 32.8 mm; Screw thread: M3; Tightening torque: 0.5–0.8 Nm; Material: polyamide; Pack: 50 pc
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/end-block-ens-35-n-0800886
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/0800886/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/end-block-ens-35-n-0800886?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/end-block-ens-35-n-0800886#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/end-block-ens-35-n-0800886#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=0800886
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=0800886
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

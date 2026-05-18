@@ -1,0 +1,22 @@
+ADVANTECH PART
+========================================
+Part number       : EKI-1526
+Product name      : EKI-1526
+Manufacturer      : Advantech
+Category          : Serial device server
+
+DESCRIPTION
+-----------
+Advantech 16-port RS-232/422/485 serial device server. Converts serial devices to Ethernet network connectivity for industrial automation and remote monitoring applications.
+
+KEY SPECIFICATIONS
+------------------
+Serial ports: 16× RS-232/422/485; Network: Ethernet; DIN rail mount: yes; Configuration: web-based
+
+IDENTIFICATION CONFIDENCE
+-------------------------
+High — front label reads Advantech EKI-1526.
+
+LINKS (open in browser)
+-----------------------
+Product page      : https://www.advantech.com/en-us/products/gf-5tqv/eki-1526/mod_290ef93d-9140-4554-b266-fd49c3e02c34

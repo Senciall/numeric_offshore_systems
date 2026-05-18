@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3046139
+Phoenix Contact   : UT 4-MT
+Category          : Knife-disconnect terminal block
+BOM description   : FEED-THROUGH TERMINAL BLOCK, KNIFE-DISCONNECT
+Used in (project) : HM
+
+DESCRIPTION
+-----------
+Knife-disconnect terminal block, 500 V nominal, 20 A thermal continuous current. Screw connection, 6.2 mm wide, gray. For testing/isolating circuits.
+
+KEY SPECIFICATIONS
+------------------
+Nominal voltage: 500 V; Continuous current: 20 A; Rated cross section: 4 mm² (AWG 26–10); Width: 6.2 mm; Length: 57.8 mm; Mounting: NS 35/7,5 or 35/15; Color: gray
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/disconnect-terminal-block-ut-4-mt-3046139
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3046139/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/disconnect-terminal-block-ut-4-mt-3046139?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/disconnect-terminal-block-ut-4-mt-3046139#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/disconnect-terminal-block-ut-4-mt-3046139#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3046139
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3046139
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

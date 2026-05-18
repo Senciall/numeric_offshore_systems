@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3046401
+Phoenix Contact   : UT 6-HESI (6,3X32)
+Category          : Fuse modular terminal block
+BOM description   : FUSED TERMINAL BLOCK
+Used in (project) : HM, HO
+
+DESCRIPTION
+-----------
+Fuse modular terminal block for 6.3 × 32 mm glass fuses, 10 A, 630 V. Screw connection M4, polyamide. Black with safety lever.
+
+KEY SPECIFICATIONS
+------------------
+Fuse type: 6.3 × 32 mm G; Nominal voltage: 630 V; Nominal current: 10 A; Rated cross section: 6 mm² (0.2–10 mm²); Surge: 6 kV; Max dissipation: 1.6 W; Color: black; Pack: 50 pc
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-ut-6-hesi-63x32-3046401
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3046401/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-ut-6-hesi-63x32-3046401?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-ut-6-hesi-63x32-3046401#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/fuse-terminal-block-ut-6-hesi-63x32-3046401#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3046401
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3046401
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF

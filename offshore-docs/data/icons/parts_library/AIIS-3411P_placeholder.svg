@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 160">
+  <rect x="8" y="8" width="204" height="144" rx="10" fill="#f8fafc" stroke="#376b7a" stroke-width="6"/>
+  <rect x="28" y="28" width="164" height="18" rx="4" fill="#376b7a"/>
+  <rect x="28" y="114" width="164" height="18" rx="4" fill="#376b7a"/>
+  <text x="110" y="74" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#17242a">AIIS-3411P</text>
+  <text x="110" y="98" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" fill="#4b5563">AIIS-3411P</text>
+  <text x="110" y="144" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#64748b">Compact vision system</text>
+</svg>

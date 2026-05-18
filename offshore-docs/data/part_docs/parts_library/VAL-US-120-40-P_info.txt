@@ -1,0 +1,26 @@
+PHOENIX CONTACT PART
+========================================
+Part number       : 2910335 / 2910342
+Product name      : Phoenix Contact VAL-US-120/40-P + GDT-US-NG/40-P
+Manufacturer      : Phoenix Contact
+Category          : Type 1 surge protection plug + gas discharge tube replacement plug
+Verified          : Yes (links verified May 2026)
+
+DESCRIPTION
+-----------
+Phoenix Contact VAL-US-120/40-P (item 2910335) is a Type 1 replacement surge protection plug for 120 V AC single-phase supplies, varistor-based, In = 20 kA, Imax = 40 kA. GDT-US-NG/40-P (item 2910342) is the matching gas discharge tube (N-G path) replacement plug for the VAL-US base. Both plug into the VALVETRAB US base element.
+
+KEY SPECIFICATIONS
+------------------
+VAL-US-120/40-P: UC 175 V AC; In 20 kA (8/20 us); Imax 40 kA; Up <= 0.9 kV; W 17.5 mm; IP20. GDT-US-NG/40-P: N-G path GDT; Imax 40 kA; matches VAL-US base.
+
+LINKS
+-----
+Product page #1   : https://www.phoenixcontact.com/en-us/products/replacement-plug-val-us-12040-p-2910335
+Datasheet PDF #1  : https://www.phoenixcontact.com/us/products/2910335/pdf
+Product page #2   : https://www.phoenixcontact.com/en-us/products/replacement-plug-gdt-us-ng40-p-2910342
+Datasheet PDF #2  : https://www.phoenixcontact.com/us/products/2910342/pdf
+
+NOTES
+-----
+Two-part folder: VAL-US-120/40-P (2910335) and GDT-US-NG/40-P (2910342). Both plug into VALVETRAB US base.

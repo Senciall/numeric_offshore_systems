@@ -1,0 +1,30 @@
+PHOENIX CONTACT PART
+====================
+Part number       : 3047028
+Phoenix Contact   : D-UT 2,5/10
+Category          : End cover
+BOM description   : TERMINAL END COVER (D-UT 2.5/10)
+Used in (project) : HM
+
+DESCRIPTION
+-----------
+End cover for UT series terminal blocks (compatible with 5.2/6.2/8.2 mm widths). Polyamide, gray RAL 7042, UL94 V0.
+
+KEY SPECIFICATIONS
+------------------
+Depth: 39.8 mm; Width: 2.2 mm; Height: 47 mm; Material: PA; Color: gray (RAL 7042); Operating temp: -60–110 °C
+
+LINKS (open in browser)
+-----------------------
+Product page    : https://www.phoenixcontact.com/en-us/products/end-cover-d-ut-2510-3047028
+Datasheet PDF   : https://www.phoenixcontact.com/us/products/3047028/pdf
+Datasheet (alt) : https://www.phoenixcontact.com/en-us/products/end-cover-d-ut-2510-3047028?type=pdf
+3D / CAD        : https://www.phoenixcontact.com/en-us/products/end-cover-d-ut-2510-3047028#downloads
+Approvals       : https://www.phoenixcontact.com/en-us/products/end-cover-d-ut-2510-3047028#approvals
+Distributors    : https://www.phoenixcontact.com/en-us/find-distributors-sales-partners?productItemNumber=3047028
+Cross-reference : https://www.phoenixcontact.com/en-us/products/cross-reference-search?searchTerm=3047028
+
+SOURCE DRAWING PACKAGES
+-----------------------
+HM (NUM-10071) - Numeric PARTS/HM/NUM-10071-LST-0100_r3 (Dwg Pkg).PDF
+HO (NUM-10075) - Numeric PARTS/HO/NUM-10075-LST-0100_r2 (Dwg Pkg).PDF
