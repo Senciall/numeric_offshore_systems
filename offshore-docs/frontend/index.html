@@ -3,18 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offshore Systems Docs</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260518-group-fat-hit" />
+  <title>Numeric Offshore Systems</title>
+  <link rel="stylesheet" href="/static/styles.css?v=20260519-numeric-brand" />
 </head>
 <body>
   <header id="app-header">
     <div class="hd-left">
-      <span class="hd-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      <span class="hd-brand" aria-label="Numeric Engineering">
+        <svg class="hd-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="numLogoGrad" x1="2" y1="4" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#ffc46b"/>
+              <stop offset=".55" stop-color="#ff8a3d"/>
+              <stop offset="1" stop-color="#ff5a3c"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#numLogoGrad)" stroke-width="1.5" stroke-linecap="round" opacity=".9">
+            <line x1="16" y1="5"  x2="7"  y2="11"/>
+            <line x1="16" y1="5"  x2="25" y2="11"/>
+            <line x1="7"  y1="11" x2="16" y2="17"/>
+            <line x1="25" y1="11" x2="16" y2="17"/>
+            <line x1="7"  y1="11" x2="11" y2="25"/>
+            <line x1="16" y1="17" x2="11" y2="25"/>
+            <line x1="16" y1="17" x2="22" y2="24"/>
+            <line x1="25" y1="11" x2="22" y2="24"/>
+          </g>
+          <g fill="url(#numLogoGrad)">
+            <circle cx="16" cy="5"  r="2.6"/>
+            <circle cx="7"  cy="11" r="2.4"/>
+            <circle cx="25" cy="11" r="2.4"/>
+            <circle cx="16" cy="17" r="2.4"/>
+            <circle cx="11" cy="25" r="2.4"/>
+            <circle cx="22" cy="24" r="2.4"/>
+          </g>
         </svg>
+        <span class="hd-wordmark">
+          <span class="hd-wordmark-top">numeric</span>
+          <span class="hd-wordmark-bot">offshore systems</span>
+        </span>
       </span>
-      <span class="hd-title">Offshore Systems</span>
       <div class="hd-sep"></div>
       <label class="hd-field">
         <span>Platform</span>
@@ -37,6 +64,14 @@
   </header>
 
   <div id="app-body">
+    <div id="resizer-left" class="panel-resizer panel-resizer-v" role="separator" aria-orientation="vertical" aria-label="Resize project tree panel" tabindex="0"></div>
+    <div id="resizer-right" class="panel-resizer panel-resizer-v" role="separator" aria-orientation="vertical" aria-label="Resize editor panel" tabindex="0"></div>
+    <button type="button" id="reopen-left" class="panel-reopen panel-reopen-left" title="Open project tree panel" aria-label="Open project tree panel">
+      <span class="panel-reopen-chevron" aria-hidden="true">›</span>
+    </button>
+    <button type="button" id="reopen-right" class="panel-reopen panel-reopen-right" title="Open editor panel" aria-label="Open editor panel">
+      <span class="panel-reopen-chevron" aria-hidden="true">‹</span>
+    </button>
     <aside id="doc-panel">
       <div id="doc-panel-header">
         <h2>Project Tree</h2>
@@ -46,6 +81,8 @@
       <div id="diagram-tree" class="diagram-tree">
         <div class="tree-placeholder">Loading diagram tree...</div>
       </div>
+
+      <div id="resizer-doc-split" class="panel-resizer panel-resizer-h" role="separator" aria-orientation="horizontal" aria-label="Resize project tree" tabindex="0"></div>
 
       <div id="docs-panel-section" class="docs-panel-section">
         <div id="docs-panel-header">
@@ -250,12 +287,10 @@
             <label class="tool-label">
               Type
               <select id="selected-wire-type" class="tool-input" disabled>
-                <option value="power">Power</option>
-                <option value="control">Control</option>
-                <option value="signal">Signal</option>
-                <option value="instrument">Instrument</option>
-                <option value="network">Network</option>
-                <option value="ground">Ground</option>
+                <option value="cat6">Cat 6 (blue)</option>
+                <option value="positive">+V (red)</option>
+                <option value="negative">- / Common (black)</option>
+                <option value="ground">Ground (green)</option>
               </select>
             </label>
             <label class="tool-label">
@@ -268,11 +303,26 @@
             <label class="tool-label">
               Color
               <div class="wire-color-row">
-                <input type="color" id="selected-wire-color" class="tool-input tool-color-input" value="#8fb7c9" disabled />
+                <input type="color" id="selected-wire-color" class="tool-input tool-color-input" value="#5b9bff" disabled />
                 <button type="button" id="clear-wire-color-btn" class="btn btn-ghost btn-sm" title="Reset to type default" disabled>Reset</button>
               </div>
             </label>
             <button type="button" id="delete-selected-wire-btn" class="btn btn-danger full-width">Delete wire</button>
+          </div>
+
+          <!-- Group properties (shown when a group is selected) -->
+          <div id="group-properties" class="hidden">
+            <label class="tool-label">
+              Name
+              <input type="text" id="selected-group-name" class="tool-input" maxlength="80" />
+            </label>
+            <label class="tool-label">
+              Description
+              <textarea id="selected-group-description" class="tool-input tool-textarea" maxlength="2000" rows="4" placeholder="Notes, purpose..."></textarea>
+            </label>
+            <div class="tool-subsection-title">Parts in group <span id="selected-group-parts-count" class="group-parts-count"></span></div>
+            <div id="selected-group-parts-list" class="group-parts-list"></div>
+            <button type="button" id="delete-selected-group-btn" class="btn btn-danger full-width">Delete group...</button>
           </div>
         </div>
 
@@ -316,7 +366,16 @@
 
       <section id="creator-tools-tab" class="editor-tab-panel creator-workspace hidden">
         <div class="creator-topbar">
-          <div class="creator-topbar-title">Part Creator</div>
+          <div class="creator-topbar-title">
+            <span class="creator-topbar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+                <circle cx="12" cy="12" r="3.5"/>
+              </svg>
+            </span>
+            <span>Part Creator</span>
+            <span class="creator-topbar-sub">Design and connect a new part</span>
+          </div>
           <div class="creator-topbar-actions">
             <button type="button" id="creator-new-btn" class="btn btn-ghost">New part</button>
             <button type="button" id="creator-close-btn" class="btn btn-ghost">Back to diagram</button>
@@ -388,8 +447,8 @@
                     <div class="creator-handle creator-handle-ne" data-handle="ne"></div>
                     <div class="creator-handle creator-handle-sw" data-handle="sw"></div>
                     <div class="creator-handle creator-handle-se" data-handle="se"></div>
-                    <div id="creator-dot-layer"></div>
                   </div>
+                  <div id="creator-dot-layer"></div>
                   <div id="creator-canvas-hint" class="creator-canvas-hint">Load a PNG to begin</div>
                 </div>
               </div>
@@ -457,6 +516,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=20260518-group-fat-hit"></script>
+  <script type="module" src="/static/app.js?v=20260519-numeric-brand"></script>
 </body>
 </html>

@@ -163,8 +163,6 @@ def connectors_for(row: dict[str, str]) -> list[dict[str, object]]:
     category = clean_text(row.get("category")).lower()
     if any(word in category for word in ["terminal", "breaker", "surge", "fuse"]):
         return [
-            {"id": "left", "x": 0, "y": 0.5, "role": "input", "label": "Line", "size": 5, "color": "#7ea1c4"},
-            {"id": "right", "x": 1, "y": 0.5, "role": "output", "label": "Load", "size": 5, "color": "#d6a84f"},
             {"id": "top", "x": 0.5, "y": 0, "role": "neutral", "label": "Top", "size": 5, "color": "#3d9b63"},
             {"id": "bottom", "x": 0.5, "y": 1, "role": "neutral", "label": "Bottom", "size": 5, "color": "#3d9b63"},
         ]

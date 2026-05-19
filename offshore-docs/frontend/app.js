@@ -13,6 +13,7 @@ const WIRE_CONNECTOR_SNAP_PX = 30;
 const WIRE_PORT_STUB = 28;
 const WIRE_CORNER_RADIUS = 7;
 const WIRE_HIT_TOLERANCE = 18;
+const CREATOR_GRID_PX = 20;
 const CENTERLINE_SNAP_PX = 10;
 const EXPANDED_PART_PREVIEW = { width: 520, height: 320, canvasWidth: 458, canvasHeight: 232, padding: 22 };
 const EXPANDED_PART_CLEARANCE = 34;
@@ -24,13 +25,18 @@ const CONNECTOR_DOT_COLOR = '#3d9b63';
 const DEFAULT_CONNECTORS = makeUniformConnectors(DEFAULT_CONNECTOR_COUNT);
 const SHAPE_CONNECTORS_8 = makeUniformConnectors(DEFAULT_CONNECTOR_COUNT);
 const WIRE_TYPES = [
-  { value: 'power', label: 'Power' },
-  { value: 'control', label: 'Control' },
-  { value: 'signal', label: 'Signal' },
-  { value: 'instrument', label: 'Instrument' },
-  { value: 'network', label: 'Network' },
+  { value: 'cat6', label: 'Cat 6' },
+  { value: 'positive', label: '+V' },
+  { value: 'negative', label: '- / Common' },
   { value: 'ground', label: 'Ground' },
 ];
+const LEGACY_WIRE_TYPE_MAP = {
+  power: 'positive',
+  network: 'cat6',
+  control: 'cat6',
+  signal: 'cat6',
+  instrument: 'cat6',
+};
 const WIRE_STYLES = [
   { value: 'solid', label: 'Solid' },
   { value: 'dashed', label: 'Dashed' },
@@ -537,8 +543,8 @@ const App = {
   connectorContentRectForNode(node, width = null, height = null) {
     const w = width ?? App.clampNodeWidth(node?.w);
     const h = height ?? App.clampNodeHeight(node?.h);
-    if (!App.isCustomIcon(node?.icon)) return { x: 0, y: 0, w, h };
-    return App.containedImageContentRect(w, h, App.ensureIconImageMetrics(node.icon));
+    if (App.isCustomIcon(node?.icon)) App.ensureIconImageMetrics(node.icon);
+    return { x: 0, y: 0, w, h };
   },
 
   connectorFramePoint(node, connector) {
@@ -705,7 +711,9 @@ const App = {
 
   normalizeWireType(value) {
     const raw = String(value || '').trim().toLowerCase();
-    return WIRE_TYPES.some((type) => type.value === raw) ? raw : 'power';
+    if (WIRE_TYPES.some((type) => type.value === raw)) return raw;
+    if (LEGACY_WIRE_TYPE_MAP[raw]) return LEGACY_WIRE_TYPE_MAP[raw];
+    return 'cat6';
   },
 
   normalizeWireStyle(value) {
@@ -715,7 +723,7 @@ const App = {
 
   wireTypeLabel(value) {
     const type = WIRE_TYPES.find((item) => item.value === App.normalizeWireType(value));
-    return type ? type.label : 'Power';
+    return type ? type.label : 'Cat 6';
   },
 
   wireStyleLabel(value) {
@@ -732,6 +740,8 @@ const App = {
       const groups = groupsRaw
         .map((g) => ({
           id: String(g.id || App.uid('group')),
+          name: String(g.name || '').slice(0, 80),
+          description: String(g.description || '').slice(0, 2000),
           nodeIds: Array.from(new Set((Array.isArray(g.nodeIds) ? g.nodeIds : []).map(String)))
             .filter((id) => validNodeIds.has(id)),
         }))
@@ -854,6 +864,8 @@ const App = {
       version: 2,
       groups: (App.state.diagram.groups || []).map((g) => ({
         id: g.id,
+        name: String(g.name || '').slice(0, 80),
+        description: String(g.description || '').slice(0, 2000),
         nodeIds: [...g.nodeIds],
       })),
       nodes: App.state.diagram.nodes.map((node) => ({
@@ -2568,7 +2580,7 @@ const App = {
   appendGroupOutlines(svg) {
     const groups = App.state.diagram.groups || [];
     if (!groups.length) return;
-    const margin = 14;
+    const margin = 28;
     for (const group of groups) {
       const bounds = App.groupBounds(group);
       if (!bounds) continue;
@@ -2585,6 +2597,12 @@ const App = {
         event.preventDefault();
         App.startGroupDrag(event, group.id);
       };
+      const onDoubleClick = (event) => {
+        if (!App.state.editMode) return;
+        event.stopPropagation();
+        event.preventDefault();
+        App.renameGroup(group.id);
+      };
 
       const hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       hit.setAttribute('x', x);
@@ -2596,6 +2614,7 @@ const App = {
       hit.setAttribute('class', 'diagram-group-outline-hit');
       hit.dataset.groupId = group.id;
       hit.addEventListener('pointerdown', onDown);
+      hit.addEventListener('dblclick', onDoubleClick);
       svg.appendChild(hit);
 
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -2610,8 +2629,55 @@ const App = {
       rect.setAttribute('class', cls);
       rect.dataset.groupId = group.id;
       rect.addEventListener('pointerdown', onDown);
+      rect.addEventListener('dblclick', onDoubleClick);
       svg.appendChild(rect);
+
+      App.appendGroupLabel(svg, group, x, y, onDown, onDoubleClick);
     }
+  },
+
+  appendGroupLabel(svg, group, x, y, onDown, onDoubleClick) {
+    if (!group.name) return;
+    const fontSize = 12;
+    const padX = 8;
+    const padY = 3;
+    const offsetX = 14;
+    const nameWidth = App.measureWireLabelWidth(group.name, fontSize) || group.name.length * fontSize * 0.55;
+    const bgHeight = fontSize + padY * 2;
+    const bgY = y - bgHeight / 2;
+    const nameBgX = x + offsetX;
+    const nameBgW = nameWidth + padX * 2;
+
+    const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    labelGroup.setAttribute('class', 'diagram-group-label');
+    labelGroup.dataset.groupId = group.id;
+
+    const namePart = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    namePart.setAttribute('class', 'diagram-group-label-name');
+    const nameBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    nameBg.setAttribute('x', nameBgX);
+    nameBg.setAttribute('y', bgY);
+    nameBg.setAttribute('width', nameBgW);
+    nameBg.setAttribute('height', bgHeight);
+    nameBg.setAttribute('rx', 4);
+    nameBg.setAttribute('class', 'diagram-group-label-bg');
+    namePart.appendChild(nameBg);
+    const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    nameText.setAttribute('x', nameBgX + padX);
+    nameText.setAttribute('y', bgY + bgHeight / 2);
+    nameText.setAttribute('font-size', fontSize);
+    nameText.setAttribute('class', 'diagram-group-label-text');
+    nameText.setAttribute('dominant-baseline', 'central');
+    nameText.textContent = group.name;
+    namePart.appendChild(nameText);
+    const nameTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    nameTitle.textContent = 'Click to select · Drag to move · Double-click to rename';
+    namePart.appendChild(nameTitle);
+    namePart.addEventListener('pointerdown', onDown);
+    namePart.addEventListener('dblclick', onDoubleClick);
+    labelGroup.appendChild(namePart);
+
+    svg.appendChild(labelGroup);
   },
 
   appendSnapGuides(svg) {
@@ -2640,7 +2706,8 @@ const App = {
   appendWirePath(svg, wire, start, end) {
     const startDir = App.endpointExitDir(wire.from);
     const endDir = App.endpointExitDir(wire.to);
-    const route = App.wireRoutePoints(start, end, wire.via, startDir, endDir, App.wireStubLengths(wire));
+    const obstacles = App.wireObstacleRects(wire);
+    const route = App.wireRoutePoints(start, end, wire.via, startDir, endDir, App.wireStubLengths(wire), obstacles);
     const d = App.roundedPolylinePath(route);
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.setAttribute('d', d);
@@ -2974,7 +3041,7 @@ const App = {
     return App.roundedPolylinePath(App.wireRoutePoints(start, end, via, startDir, endDir));
   },
 
-  wireRoutePoints(start, end, via = [], startDir = null, endDir = null, stubs = null) {
+  wireRoutePoints(start, end, via = [], startDir = null, endDir = null, stubs = null, obstacles = null) {
     if (!start || !end) return [];
     const zoom = App.viewport().zoom || 1;
     const baseStub = Math.max(16, Math.min(42, WIRE_PORT_STUB * zoom));
@@ -2992,7 +3059,7 @@ const App = {
       (pt) => App.boardToStage(App.visualBoardPoint(pt)),
     );
 
-    const route = App.orthogonalRoutePoints([startStub, ...viaPoints, endStub]);
+    const route = App.orthogonalRoutePoints([startStub, ...viaPoints, endStub], obstacles || []);
 
     const fullRoute = [
       ...(startDir ? [start] : []),
@@ -3029,7 +3096,7 @@ const App = {
     return simplified;
   },
 
-  orthogonalRoutePoints(points) {
+  orthogonalRoutePoints(points, obstacles = []) {
     if (points.length < 2) return points;
     const route = [{ x: Math.round(points[0].x), y: Math.round(points[0].y) }];
 
@@ -3057,13 +3124,61 @@ const App = {
       if (prev.x === next.x || prev.y === next.y) {
         route.push(next);
       } else {
-        route.push({ x: next.x, y: prev.y }, next);
+        const hBend = { x: next.x, y: prev.y };
+        const vBend = { x: prev.x, y: next.y };
+        const hCrosses = App.pathCrossesObstacles([prev, hBend, next], obstacles);
+        const vCrosses = App.pathCrossesObstacles([prev, vBend, next], obstacles);
+        const useVertical = hCrosses && !vCrosses;
+        route.push(useVertical ? vBend : hBend, next);
       }
     }
 
     return route.filter((point, idx, arr) => (
       idx === 0 || point.x !== arr[idx - 1].x || point.y !== arr[idx - 1].y
     ));
+  },
+
+  nodeStageBounds(node) {
+    const pos = App.visualNodePosition(node);
+    const w = App.clampNodeWidth(node.w);
+    const h = App.clampNodeHeight(node.h);
+    const tl = App.boardToStage({ x: pos.x, y: pos.y });
+    const br = App.boardToStage({ x: pos.x + w, y: pos.y + h });
+    return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
+  },
+
+  wireObstacleRects(wire) {
+    const rects = [];
+    for (const node of App.state.diagram.nodes || []) {
+      if (App.isTextBoxNode(node)) continue;
+      rects.push(App.nodeStageBounds(node));
+    }
+    return rects;
+  },
+
+  segmentCrossesRect(a, b, rect, padding = 2) {
+    const minX = Math.min(a.x, b.x);
+    const maxX = Math.max(a.x, b.x);
+    const minY = Math.min(a.y, b.y);
+    const maxY = Math.max(a.y, b.y);
+    return (
+      maxX > rect.left + padding &&
+      minX < rect.right - padding &&
+      maxY > rect.top + padding &&
+      minY < rect.bottom - padding
+    );
+  },
+
+  pathCrossesObstacles(points, obstacles) {
+    if (!obstacles || !obstacles.length || !points || points.length < 2) return false;
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const a = points[i];
+      const b = points[i + 1];
+      for (const rect of obstacles) {
+        if (App.segmentCrossesRect(a, b, rect)) return true;
+      }
+    }
+    return false;
   },
 
   roundedPolylinePath(points) {
@@ -3414,18 +3529,43 @@ const App = {
   },
 
   groupBounds(group) {
-    const nodes = (group?.nodeIds || []).map((id) => App.findNode(id)).filter(Boolean);
+    const nodeIds = new Set((group?.nodeIds || []).map(String));
+    const nodes = [...nodeIds].map((id) => App.findNode(id)).filter(Boolean);
     if (!nodes.length) return null;
     let left = Infinity;
     let top = Infinity;
     let right = -Infinity;
     let bottom = -Infinity;
+    const include = (bx, by) => {
+      if (bx < left) left = bx;
+      if (by < top) top = by;
+      if (bx > right) right = bx;
+      if (by > bottom) bottom = by;
+    };
     for (const node of nodes) {
       const bounds = App.nodeBounds(node);
-      if (bounds.left < left) left = bounds.left;
-      if (bounds.top < top) top = bounds.top;
-      if (bounds.right > right) right = bounds.right;
-      if (bounds.bottom > bottom) bottom = bounds.bottom;
+      include(bounds.left, bounds.top);
+      include(bounds.right, bounds.bottom);
+    }
+    for (const wire of App.state.diagram.wires || []) {
+      const fromId = String(wire.from?.nodeId || '');
+      const toId = String(wire.to?.nodeId || '');
+      if (!nodeIds.has(fromId) || !nodeIds.has(toId)) continue;
+      const start = App.endpointPoint(wire.from);
+      const end = App.endpointPoint(wire.to);
+      if (!start || !end) continue;
+      const route = App.wireRoutePoints(
+        start,
+        end,
+        wire.via,
+        App.endpointExitDir(wire.from),
+        App.endpointExitDir(wire.to),
+        App.wireStubLengths(wire),
+      );
+      for (const pt of route) {
+        const board = App.stageToBoard(pt);
+        include(board.x, board.y);
+      }
     }
     return { left, top, right, bottom };
   },
@@ -3445,11 +3585,20 @@ const App = {
         if (groups[existingIdx].nodeIds.length < 2) groups.splice(existingIdx, 1);
       }
     }
-    const group = { id: App.uid('group'), nodeIds: ids.map(String) };
+    const usedNumbers = new Set();
+    for (const g of groups) {
+      const match = /^Group\s+(\d+)$/i.exec(String(g.name || '').trim());
+      if (match) usedNumbers.add(Number(match[1]));
+    }
+    let nextNum = 1;
+    while (usedNumbers.has(nextNum)) nextNum += 1;
+    const group = { id: App.uid('group'), name: `Group ${nextNum}`, description: '', nodeIds: ids.map(String) };
     groups.push(group);
     App.state.selectedGroupId = group.id;
     App.markDiagramDirty?.();
     App.renderDiagram();
+    App.renderSelectionTools?.();
+    App.toast(`${group.name} created.`, 'info');
   },
 
   ungroupSelected() {
@@ -3470,6 +3619,70 @@ const App = {
     App.state.selectedGroupId = null;
     App.markDiagramDirty?.();
     App.renderDiagram();
+  },
+
+  renameGroup(groupId) {
+    const group = App.findGroup(groupId);
+    if (!group || !App.state.editMode) return;
+    const next = window.prompt('Group name:', group.name || '');
+    if (next === null) return;
+    const trimmed = String(next).trim().slice(0, 80);
+    if (!trimmed) return;
+    group.name = trimmed;
+    App.markDiagramDirty?.();
+    App.renderDiagram();
+  },
+
+  deleteGroup(groupId, opts = {}) {
+    if (!App.state.editMode) return;
+    const groups = App.state.diagram.groups || [];
+    const idx = groups.findIndex((g) => g.id === groupId);
+    if (idx === -1) return;
+    const removed = groups[idx];
+    const nodeIds = [...(removed.nodeIds || [])].map(String);
+    let deleteParts = opts.deleteParts;
+
+    if (deleteParts === undefined) {
+      const name = removed.name || 'group';
+      if (!window.confirm(`Delete "${name}"?`)) return;
+      if (nodeIds.length > 0) {
+        deleteParts = window.confirm(
+          `Also delete the ${nodeIds.length} part${nodeIds.length === 1 ? '' : 's'} inside this group?\n\nOK = delete the parts too\nCancel = keep the parts on the diagram`,
+        );
+      } else {
+        deleteParts = false;
+      }
+    }
+
+    groups.splice(idx, 1);
+    if (App.state.selectedGroupId === groupId) App.state.selectedGroupId = null;
+
+    let removedParts = 0;
+    if (deleteParts && nodeIds.length) {
+      const deleteIds = new Set(nodeIds);
+      App.state.diagram.nodes = App.state.diagram.nodes.filter((node) => !deleteIds.has(String(node.id)));
+      App.state.diagram.wires = App.state.diagram.wires.filter((wire) => (
+        !deleteIds.has(String(wire.from?.nodeId)) && !deleteIds.has(String(wire.to?.nodeId))
+      ));
+      for (const id of deleteIds) {
+        delete App.state.docCounts[id];
+        App.state.expandedNodeIds.delete(String(id));
+        App.state.selectedNodeIds.delete(String(id));
+        if (App.state.selectedNodeId === id) App.state.selectedNodeId = null;
+      }
+      removedParts = nodeIds.length;
+    }
+
+    App.markDiagramDirty?.();
+    App.renderDiagram();
+    App.renderSelectionTools?.();
+    if (removedParts) App.renderDiagramTree?.();
+    App.toast(
+      removedParts
+        ? `${removed.name || 'Group'} and ${removedParts} part${removedParts === 1 ? '' : 's'} removed`
+        : `${removed.name || 'Group'} removed`,
+      'info',
+    );
   },
 
   removeNodeFromGroups(nodeId) {
@@ -3880,7 +4093,11 @@ const App = {
       App.deleteSelectedWire();
       return;
     }
-    if (App.state.selectedNodeId) App.deleteSelectedNode();
+    if (App.state.selectedNodeId) {
+      App.deleteSelectedNode();
+      return;
+    }
+    if (App.state.selectedGroupId) App.deleteGroup(App.state.selectedGroupId);
   },
 
   handleToolbarAction(action) {
@@ -4129,6 +4346,7 @@ const App = {
       App.state.selectedNodeId = id;
     }
     App.state.selectedWireId = null;
+    App.state.selectedGroupId = null;
     App.state.editingTextNodeId = null;
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
@@ -4146,6 +4364,7 @@ const App = {
     App.state.selectedWireId = String(wire.id);
     App.state.selectedNodeId = null;
     App.state.selectedNodeIds.clear();
+    App.state.selectedGroupId = null;
     App.state.editingTextNodeId = null;
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
@@ -4176,16 +4395,24 @@ const App = {
     App.renderToolbarState();
     const node = App.findNode(App.state.selectedNodeId);
     const wire = App.findWire(App.state.selectedWireId);
+    const group = !node && !wire ? App.findGroup(App.state.selectedGroupId) : null;
 
     const placeholder = App.el('properties-placeholder');
     const nodeProps = App.el('node-properties');
     const wireProps = App.el('wire-properties');
+    const groupProps = App.el('group-properties');
     const title = App.el('properties-section-title');
+    const section = App.el('properties-section');
+    const panel = App.el('editor-panel');
+    const hasSelection = !!(node || wire || group);
+    if (section) section.classList.toggle('hidden', !hasSelection);
+    if (panel) panel.classList.toggle('has-selection', hasSelection);
 
     if (node) {
       placeholder.classList.add('hidden');
       nodeProps.classList.remove('hidden');
       wireProps.classList.add('hidden');
+      if (groupProps) groupProps.classList.add('hidden');
       title.textContent = `Properties — ${node.label}`;
 
       const labelInput = App.el('selected-node-label');
@@ -4228,6 +4455,7 @@ const App = {
       placeholder.classList.add('hidden');
       nodeProps.classList.add('hidden');
       wireProps.classList.remove('hidden');
+      if (groupProps) groupProps.classList.add('hidden');
       title.textContent = `Properties — ${App.wireTypeLabel(wire.type)} Wire`;
 
       const wireTypeSelect = App.el('selected-wire-type');
@@ -4251,10 +4479,18 @@ const App = {
       clearWireColorBtn.disabled = !wire.color;
       App.el('delete-selected-wire-btn').disabled = false;
       App.el('wire-status').textContent = `${App.wireTypeLabel(wire.type)}, ${App.wireStyleLabel(wire.lineStyle).toLowerCase()}`;
+    } else if (group) {
+      placeholder.classList.add('hidden');
+      nodeProps.classList.add('hidden');
+      wireProps.classList.add('hidden');
+      if (groupProps) groupProps.classList.remove('hidden');
+      title.textContent = `Group — ${group.name || 'Untitled'}`;
+      App.renderGroupProperties(group);
     } else {
       placeholder.classList.remove('hidden');
       nodeProps.classList.add('hidden');
       wireProps.classList.add('hidden');
+      if (groupProps) groupProps.classList.add('hidden');
       title.textContent = 'Properties';
 
       // Reset disabled states for when items become selected
@@ -4269,6 +4505,65 @@ const App = {
       App.el('selected-node-connector-count-readout').textContent = String(DEFAULT_CONNECTOR_COUNT);
       const connectorList = App.el('selected-node-connectors-list');
       if (connectorList) connectorList.innerHTML = '';
+    }
+  },
+
+  renderGroupProperties(group) {
+    if (!group) return;
+    const nameInput = App.el('selected-group-name');
+    const descInput = App.el('selected-group-description');
+    const partsList = App.el('selected-group-parts-list');
+    const partsCount = App.el('selected-group-parts-count');
+    const deleteBtn = App.el('delete-selected-group-btn');
+    const editable = !!App.state.editMode;
+
+    if (nameInput) {
+      if (document.activeElement !== nameInput) nameInput.value = group.name || '';
+      nameInput.disabled = !editable;
+      nameInput.oninput = () => {
+        group.name = String(nameInput.value).slice(0, 80);
+        App.markDiagramDirty?.();
+        const title = App.el('properties-section-title');
+        if (title) title.textContent = `Group — ${group.name || 'Untitled'}`;
+        App.renderWires();
+      };
+    }
+
+    if (descInput) {
+      if (document.activeElement !== descInput) descInput.value = group.description || '';
+      descInput.disabled = !editable;
+      descInput.oninput = () => {
+        group.description = String(descInput.value).slice(0, 2000);
+        App.markDiagramDirty?.();
+      };
+    }
+
+    if (partsCount) {
+      const n = (group.nodeIds || []).length;
+      partsCount.textContent = `(${n})`;
+    }
+
+    if (partsList) {
+      partsList.innerHTML = '';
+      for (const id of group.nodeIds || []) {
+        const node = App.findNode(id);
+        if (!node) continue;
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'group-part-row';
+        row.title = 'Select this part';
+        const label = document.createElement('span');
+        label.className = 'group-part-label';
+        label.textContent = node.label || `Icon ${node.id}`;
+        row.appendChild(label);
+        row.addEventListener('click', () => App.selectNode(node.id));
+        partsList.appendChild(row);
+      }
+    }
+
+    if (deleteBtn) {
+      deleteBtn.disabled = !editable;
+      deleteBtn.onclick = () => App.deleteGroup(group.id);
     }
   },
 
@@ -4441,14 +4736,12 @@ const App = {
 
   wireTypeDefaultColor(type) {
     const map = {
-      power: '#d6a84f',
-      control: '#8fb7c9',
-      signal: '#78c6a3',
-      instrument: '#b58ad8',
-      network: '#7fa2ff',
-      ground: '#a5a9ad',
+      cat6: '#5b9bff',
+      positive: '#e15a5a',
+      negative: '#cfcfcf',
+      ground: '#3fa55a',
     };
-    return map[App.normalizeWireType(type)] || '#8fb7c9';
+    return map[App.normalizeWireType(type)] || '#5b9bff';
   },
 
   updateSelectedWireColor(value) {
@@ -6142,10 +6435,10 @@ const App = {
   },
 
   creatorConnectorRect() {
-    const wrap = App.el('creator-img-wrap');
-    const w = Math.max(1, wrap?.offsetWidth || 1);
-    const h = Math.max(1, wrap?.offsetHeight || 1);
-    return App.containedImageContentRect(w, h, App.state.creator.imageMetrics);
+    const preview = App.el('creator-preview');
+    const w = Math.max(1, preview?.clientWidth || 1);
+    const h = Math.max(1, preview?.clientHeight || 1);
+    return { x: 0, y: 0, w, h };
   },
 
   positionCreatorDotElement(el, dot) {
@@ -6179,21 +6472,38 @@ const App = {
     preview.addEventListener('click', (e) => {
       if (!App.state.creator.addingDot) return;
       if (e.target.closest('.creator-dot')) return;
-      const frac = App.screenToLayerFraction(e.clientX, e.clientY);
-      App.addCreatorDotAtFraction(frac.x, frac.y);
-      App.state.creator.addingDot = false;
-      preview.classList.remove('is-adding-dot');
-      App.el('creator-add-dot-btn').textContent = '+ Add';
+      const raw = App.screenToLayerFraction(e.clientX, e.clientY);
+      const frac = e.shiftKey ? raw : App.snapCreatorFraction(raw);
+      App.addCreatorDotAtFraction(frac.x, frac.y, { autoSelect: false });
     });
+  },
+
+  setCreatorAddingDot(adding) {
+    App.state.creator.addingDot = !!adding;
+    const preview = App.el('creator-preview');
+    const btn = App.el('creator-add-dot-btn');
+    if (preview) preview.classList.toggle('is-adding-dot', !!adding);
+    if (btn) {
+      btn.classList.toggle('is-adding', !!adding);
+      btn.textContent = adding ? '✕ Done adding' : '+ Add';
+    }
   },
 
   initCreatorDotControls() {
     App.el('creator-add-dot-btn').addEventListener('click', () => {
+      if (App.state.creator.addingDot) {
+        App.setCreatorAddingDot(false);
+        return;
+      }
       const src = App.state.creator.objectUrl || App.state.creator.imageUrl;
       if (!src) { App.toast('Load a PNG first.', 'warn'); return; }
-      App.state.creator.addingDot = !App.state.creator.addingDot;
-      App.el('creator-preview').classList.toggle('is-adding-dot', App.state.creator.addingDot);
-      App.el('creator-add-dot-btn').textContent = App.state.creator.addingDot ? '✕ Cancel' : '+ Add';
+      App.setCreatorAddingDot(true);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && App.state.creator.addingDot) {
+        App.setCreatorAddingDot(false);
+      }
     });
 
     App.el('creator-dot-delete-btn').addEventListener('click', App.deleteActiveCreatorDot);
@@ -6215,22 +6525,24 @@ const App = {
   },
 
   screenToLayerFraction(clientX, clientY) {
-    const wrap = App.el('creator-img-wrap');
-    const style = window.getComputedStyle(wrap);
-    const matrix = new DOMMatrix(style.transform);
-    const inverse = matrix.inverse();
-    const rect = wrap.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const local = inverse.transformPoint(new DOMPoint(clientX - centerX, clientY - centerY));
-    const nw = wrap.offsetWidth;
-    const nh = wrap.offsetHeight;
-    const connectorRect = App.creatorConnectorRect();
-    const localX = local.x + nw / 2;
-    const localY = local.y + nh / 2;
+    const preview = App.el('creator-preview');
+    const rect = preview.getBoundingClientRect();
+    const w = Math.max(1, rect.width);
+    const h = Math.max(1, rect.height);
     return {
-      x: Math.max(0, Math.min(1, (localX - connectorRect.x) / connectorRect.w)),
-      y: Math.max(0, Math.min(1, (localY - connectorRect.y) / connectorRect.h)),
+      x: Math.max(0, Math.min(1, (clientX - rect.left) / w)),
+      y: Math.max(0, Math.min(1, (clientY - rect.top) / h)),
+    };
+  },
+
+  snapCreatorFraction(frac) {
+    const rect = App.creatorConnectorRect();
+    const step = CREATOR_GRID_PX;
+    const px = Math.round((frac.x * rect.w) / step) * step;
+    const py = Math.round((frac.y * rect.h) / step) * step;
+    return {
+      x: Math.max(0, Math.min(1, rect.w ? px / rect.w : frac.x)),
+      y: Math.max(0, Math.min(1, rect.h ? py / rect.h : frac.y)),
     };
   },
 
@@ -6300,25 +6612,33 @@ const App = {
     const layer = App.el('creator-dot-layer');
     if (!layer) return;
     layer.innerHTML = '';
+    const hit = 22;
     for (const dot of App.state.creator.connectors || []) {
       const isActive = dot.id === App.state.creator.activeConnectorId;
       const size = Math.max(4, dot.size || 8);
       const el = document.createElement('div');
       el.className = `creator-dot role-${dot.role || 'neutral'}${isActive ? ' is-active' : ''}`;
       App.positionCreatorDotElement(el, dot);
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.marginLeft = `-${size / 2}px`;
-      el.style.marginTop = `-${size / 2}px`;
-      el.style.borderColor = dot.color || '';
-      if (isActive) el.style.background = dot.color || '';
+      el.style.width = `${hit}px`;
+      el.style.height = `${hit}px`;
+      el.style.marginLeft = `-${hit / 2}px`;
+      el.style.marginTop = `-${hit / 2}px`;
       el.style.touchAction = 'none';
       el.dataset.dotId = dot.id;
+
+      const core = document.createElement('span');
+      core.className = 'creator-dot-core';
+      core.style.width = `${size}px`;
+      core.style.height = `${size}px`;
+      core.style.borderColor = dot.color || '';
+      if (isActive) core.style.background = dot.color || '';
+      el.appendChild(core);
+
       if (dot.label) {
         const lbl = document.createElement('span');
         lbl.className = 'creator-dot-label';
         lbl.textContent = dot.label;
-        el.appendChild(lbl);
+        core.appendChild(lbl);
       }
       el.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
@@ -6344,20 +6664,58 @@ const App = {
       const name = document.createElement('span');
       name.className = 'creator-dot-list-name';
       name.textContent = dot.label || dot.id;
+      name.title = 'Double-click to rename';
       const role = document.createElement('span');
       role.className = 'creator-dot-list-role';
       role.textContent = dot.role || 'neutral';
       row.append(indicator, name, role);
-      row.addEventListener('click', () => App.selectCreatorDot(dot.id));
+      row.addEventListener('click', (e) => {
+        if (e.target.classList.contains('creator-dot-list-name-input')) return;
+        App.selectCreatorDot(dot.id);
+      });
+      name.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        App.beginRenameCreatorDot(dot.id, name);
+      });
       list.appendChild(row);
     }
   },
 
+  beginRenameCreatorDot(dotId, nameEl) {
+    const dot = (App.state.creator.connectors || []).find((c) => c.id === dotId);
+    if (!dot) return;
+    App.selectCreatorDot(dotId);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'creator-dot-list-name-input';
+    input.value = dot.label || '';
+    input.maxLength = 50;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    let done = false;
+    const commit = (save) => {
+      if (done) return;
+      done = true;
+      if (save) {
+        dot.label = input.value;
+        const labelInput = App.el('creator-dot-label');
+        if (labelInput && App.state.creator.activeConnectorId === dotId) labelInput.value = dot.label;
+        App.renderCreatorDots();
+      }
+      App.renderCreatorDotsList();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); commit(false); }
+    });
+    input.addEventListener('blur', () => commit(true));
+    input.addEventListener('click', (e) => e.stopPropagation());
+  },
+
   selectCreatorDot(id) {
     App.state.creator.activeConnectorId = id;
-    App.state.creator.addingDot = false;
-    App.el('creator-preview').classList.remove('is-adding-dot');
-    App.el('creator-add-dot-btn').textContent = '+ Add';
+    App.setCreatorAddingDot(false);
     const dot = (App.state.creator.connectors || []).find((c) => c.id === id);
     if (dot) {
       App.el('creator-dot-label').value = dot.label || '';
@@ -6367,8 +6725,22 @@ const App = {
       App.el('creator-dot-props').classList.remove('hidden');
       App.el('creator-dot-delete-btn').disabled = false;
     }
-    App.renderCreatorDots();
+    App.refreshCreatorDotActiveState();
     App.renderCreatorDotsList();
+  },
+
+  refreshCreatorDotActiveState() {
+    const layer = App.el('creator-dot-layer');
+    if (!layer) return;
+    const activeId = App.state.creator.activeConnectorId;
+    for (const el of layer.querySelectorAll('.creator-dot')) {
+      const dot = (App.state.creator.connectors || []).find((c) => c.id === el.dataset.dotId);
+      if (!dot) continue;
+      const isActive = el.dataset.dotId === activeId;
+      el.classList.toggle('is-active', isActive);
+      const core = el.querySelector('.creator-dot-core');
+      if (core) core.style.background = isActive ? (dot.color || '') : '';
+    }
   },
 
   updateActiveCreatorDot() {
@@ -6395,18 +6767,21 @@ const App = {
     App.renderCreatorDotsList();
   },
 
-  addCreatorDotAtFraction(x, y) {
+  addCreatorDotAtFraction(x, y, { autoSelect = true } = {}) {
     const id = App.uid('dot');
     const dot = { id, x: App.clamp01(x), y: App.clamp01(y), role: 'neutral', label: '', size: 5, color: '#7ea1c4' };
     if (!Array.isArray(App.state.creator.connectors)) App.state.creator.connectors = [];
     App.state.creator.connectors.push(dot);
-    App.selectCreatorDot(id);
+    App.renderCreatorDots();
+    if (autoSelect) App.selectCreatorDot(id);
+    else App.renderCreatorDotsList();
   },
 
   startCreatorDotDrag(startEvent, dotId, dotEl) {
     dotEl.setPointerCapture(startEvent.pointerId);
     const onMove = (e) => {
-      const frac = App.screenToLayerFraction(e.clientX, e.clientY);
+      const raw = App.screenToLayerFraction(e.clientX, e.clientY);
+      const frac = e.shiftKey ? raw : App.snapCreatorFraction(raw);
       const dot = (App.state.creator.connectors || []).find((c) => c.id === dotId);
       if (dot) {
         dot.x = frac.x;
@@ -6458,6 +6833,7 @@ const App = {
     App.el('creator-file-name').textContent = icon.filename ? `Current PNG: ${icon.filename}` : 'Current PNG loaded';
     App.el('creator-link-url-input').value = '';
     App.el('creator-link-label-input').value = '';
+    App.setCreatorAddingDot(false);
     App.renderCreator();
     App.renderCreatorLinks();
     App.renderCreatorDocFolderSelect();
@@ -6613,8 +6989,7 @@ const App = {
     App.el('creator-link-label-input').value = '';
     App.el('creator-dot-props').classList.add('hidden');
     App.el('creator-dot-delete-btn').disabled = true;
-    App.el('creator-preview').classList.remove('is-adding-dot');
-    App.el('creator-add-dot-btn').textContent = '+ Add';
+    App.setCreatorAddingDot(false);
     App.renderCreatorDocFolderSelect();
     App.renderCreator();
     App.renderCreatorDocs();
@@ -6892,13 +7267,146 @@ const App = {
       if (event.key === 'Delete' && App.state.editMode && !App.isTextInputTarget(event.target)) {
         if (App.state.selectedWireId) App.deleteSelectedWire();
         else if (App.state.selectedNodeId) App.deleteSelectedNode();
+        else if (App.state.selectedGroupId) App.deleteGroup(App.state.selectedGroupId);
       }
     });
+  },
+
+  initPanelResizers() {
+    const STORAGE_KEY = 'offshoreDocs.panelSizes.v1';
+    const root = document.documentElement;
+    const MIN_L = 180, MAX_L = 640;
+    const MIN_R = 240, MAX_R = 720;
+    const COLLAPSE_AT = 100;
+    const DEFAULT_L = 290;
+    const DEFAULT_R = 360;
+    const MIN_TREE_PX = 80;
+    const MIN_DOCS_PX = 80;
+
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (_) {}
+    if (typeof saved.left === 'number') root.style.setProperty('--panel-l-w', `${saved.left}px`);
+    if (typeof saved.right === 'number') root.style.setProperty('--panel-r-w', `${saved.right}px`);
+    if (typeof saved.treePct === 'number') root.style.setProperty('--diagram-tree-h', `${saved.treePct}%`);
+    if (saved.lCollapsed) document.body.classList.add('l-collapsed');
+    if (saved.rCollapsed) document.body.classList.add('r-collapsed');
+
+    const persist = (patch) => {
+      try {
+        const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
+      } catch (_) {}
+    };
+
+    const startDrag = (handle, onMove, horizontal) => {
+      handle.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        handle.setPointerCapture(e.pointerId);
+        handle.classList.add('is-dragging');
+        document.body.classList.add('is-resizing');
+        if (horizontal) document.body.classList.add('resizing-h');
+
+        const onPointerMove = (ev) => onMove(ev);
+        const onPointerUp = (ev) => {
+          handle.releasePointerCapture(ev.pointerId);
+          handle.removeEventListener('pointermove', onPointerMove);
+          handle.removeEventListener('pointerup', onPointerUp);
+          handle.removeEventListener('pointercancel', onPointerUp);
+          handle.classList.remove('is-dragging');
+          document.body.classList.remove('is-resizing');
+          document.body.classList.remove('resizing-h');
+        };
+        handle.addEventListener('pointermove', onPointerMove);
+        handle.addEventListener('pointerup', onPointerUp);
+        handle.addEventListener('pointercancel', onPointerUp);
+      });
+    };
+
+    const collapseLeft = () => {
+      document.body.classList.add('l-collapsed');
+      persist({ lCollapsed: true });
+    };
+    const expandLeft = () => {
+      document.body.classList.remove('l-collapsed');
+      const saved2 = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (_) { return {}; } })();
+      const w = typeof saved2.left === 'number' && saved2.left >= MIN_L ? saved2.left : DEFAULT_L;
+      root.style.setProperty('--panel-l-w', `${w}px`);
+      persist({ lCollapsed: false });
+    };
+    const collapseRight = () => {
+      document.body.classList.add('r-collapsed');
+      persist({ rCollapsed: true });
+    };
+    const expandRight = () => {
+      document.body.classList.remove('r-collapsed');
+      const saved2 = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (_) { return {}; } })();
+      const w = typeof saved2.right === 'number' && saved2.right >= MIN_R ? saved2.right : DEFAULT_R;
+      root.style.setProperty('--panel-r-w', `${w}px`);
+      persist({ rCollapsed: false });
+    };
+
+    const leftHandle = document.getElementById('resizer-left');
+    if (leftHandle) {
+      startDrag(leftHandle, (ev) => {
+        const appBody = document.getElementById('app-body');
+        const rect = appBody.getBoundingClientRect();
+        const raw = ev.clientX - rect.left;
+        if (raw < COLLAPSE_AT) {
+          collapseLeft();
+          return;
+        }
+        const w = Math.max(MIN_L, Math.min(MAX_L, raw));
+        root.style.setProperty('--panel-l-w', `${w}px`);
+        persist({ left: w, lCollapsed: false });
+      }, false);
+    }
+
+    const rightHandle = document.getElementById('resizer-right');
+    if (rightHandle) {
+      startDrag(rightHandle, (ev) => {
+        const appBody = document.getElementById('app-body');
+        const rect = appBody.getBoundingClientRect();
+        const hasViewer = document.body.classList.contains('has-viewer');
+        const viewerOffset = hasViewer ? 420 + 1 : 0;
+        const raw = rect.right - ev.clientX - viewerOffset;
+        if (raw < COLLAPSE_AT) {
+          collapseRight();
+          return;
+        }
+        const w = Math.max(MIN_R, Math.min(MAX_R, raw));
+        root.style.setProperty('--panel-r-w', `${w}px`);
+        persist({ right: w, rCollapsed: false });
+      }, false);
+    }
+
+    const reopenLeft = document.getElementById('reopen-left');
+    if (reopenLeft) reopenLeft.addEventListener('click', expandLeft);
+    const reopenRight = document.getElementById('reopen-right');
+    if (reopenRight) reopenRight.addEventListener('click', expandRight);
+
+    const splitHandle = document.getElementById('resizer-doc-split');
+    if (splitHandle) {
+      startDrag(splitHandle, (ev) => {
+        const docPanel = document.getElementById('doc-panel');
+        const header = document.getElementById('doc-panel-header');
+        const headerH = header ? header.getBoundingClientRect().height : 0;
+        const rect = docPanel.getBoundingClientRect();
+        if (rect.height <= 0) return;
+        const maxTree = rect.height - headerH - 6 - MIN_DOCS_PX;
+        let treeH = ev.clientY - rect.top - headerH;
+        treeH = Math.max(MIN_TREE_PX, Math.min(maxTree, treeH));
+        const pct = (treeH / rect.height) * 100;
+        root.style.setProperty('--diagram-tree-h', `${pct.toFixed(2)}%`);
+        persist({ treePct: Number(pct.toFixed(2)) });
+      }, true);
+    }
   },
 
   async init() {
     App.initTheme();
     App.bindEvents();
+    App.initPanelResizers();
     App.initCreator();
     App.renderCreator();
     App.renderCreatorDocFolderSelect();
