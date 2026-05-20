@@ -16,7 +16,9 @@ import sqlite3
 from pathlib import Path
 from typing import Iterable
 
-from db import ICONS_DIR, PART_DOCS_DIR, PROJECT_ROOT, get_conn, utcnow_iso
+from datetime import datetime
+
+from db import DB_PATH, ICONS_DIR, PART_DOCS_DIR, PROJECT_ROOT, get_conn, utcnow_iso
 
 
 LIBRARY_ROOT = PROJECT_ROOT.parent / "Parts Library"
@@ -318,7 +320,6 @@ def upsert_part(conn: sqlite3.Connection, row: dict[str, str], now: str) -> tupl
     category = clean_text(row.get("category")) or "Phoenix Contact"
     folder = (clean_text(row.get("folder")) or category)[:80]
     description = description_from(row, info)
-    icon_filename, icon_rel_path, icon_mime = copy_icon(part_dir, part_number, name, category)
 
     links = dedupe_links([
         *parse_info_links(info),
@@ -333,21 +334,17 @@ def upsert_part(conn: sqlite3.Connection, row: dict[str, str], now: str) -> tupl
         (part_number,),
     ).fetchone()
     if existing:
+        # Preserve the existing image pointer — the user may have uploaded a
+        # custom icon. Only refresh metadata fields.
         icon_id = int(existing["id"])
         conn.execute(
             """
             UPDATE icons
-               SET name=?, filename=?, stored_path=?, mime_type=?, connectors_json=?,
-                   uploaded_at=?, folder=?, description=?, part_number=?, links_json=?
+               SET name=?, folder=?, description=?, part_number=?, links_json=?
              WHERE id=?
             """,
             (
                 name,
-                icon_filename,
-                icon_rel_path,
-                icon_mime,
-                json.dumps(connectors),
-                now,
                 folder,
                 description,
                 part_number,
@@ -356,6 +353,7 @@ def upsert_part(conn: sqlite3.Connection, row: dict[str, str], now: str) -> tupl
             ),
         )
     else:
+        icon_filename, icon_rel_path, icon_mime = copy_icon(part_dir, part_number, name, category)
         cur = conn.execute(
             """
             INSERT INTO icons
@@ -386,23 +384,99 @@ def upsert_part(conn: sqlite3.Connection, row: dict[str, str], now: str) -> tupl
     return icon_id, f"{part_number} {name} ({bom_description or category})"
 
 
+def relabel_existing_nodes(conn: sqlite3.Connection) -> int:
+    """Cascade icon names onto every persisted diagram node that references them.
+
+    Mirrors the frontend's cascadeIconRenameInDiagram so re-importing the parts
+    library retroactively refreshes labels on diagrams and subdiagrams that
+    were saved before friendly_name existed.
+    """
+    icons = {row["id"]: row["name"] for row in conn.execute("SELECT id, name FROM icons").fetchall()}
+    if not icons:
+        return 0
+
+    total = 0
+    for icon_id, name in icons.items():
+        cur = conn.execute(
+            "UPDATE nodes SET label=? WHERE icon=? AND label<>?",
+            (name, f"custom:{icon_id}", name),
+        )
+        total += cur.rowcount or 0
+
+    def rewrite_blob(blob_json: str) -> tuple[str, int]:
+        try:
+            doc = json.loads(blob_json)
+        except (TypeError, ValueError):
+            return blob_json, 0
+        changed = 0
+        for node in doc.get("nodes", []) or []:
+            icon_key = str(node.get("icon") or "")
+            if not icon_key.startswith("custom:"):
+                continue
+            try:
+                icon_id = int(icon_key.split(":", 1)[1])
+            except ValueError:
+                continue
+            new_name = icons.get(icon_id)
+            if new_name and node.get("label") != new_name:
+                node["label"] = new_name
+                changed += 1
+        return (json.dumps(doc) if changed else blob_json), changed
+
+    for row in conn.execute("SELECT platform_id, drawflow_json FROM diagrams").fetchall():
+        new_blob, changed = rewrite_blob(row["drawflow_json"])
+        if changed:
+            conn.execute(
+                "UPDATE diagrams SET drawflow_json=? WHERE platform_id=?",
+                (new_blob, row["platform_id"]),
+            )
+            total += changed
+
+    for row in conn.execute("SELECT id, drawflow_json FROM subdiagrams").fetchall():
+        new_blob, changed = rewrite_blob(row["drawflow_json"])
+        if changed:
+            conn.execute(
+                "UPDATE subdiagrams SET drawflow_json=? WHERE id=?",
+                (new_blob, row["id"]),
+            )
+            total += changed
+
+    return total
+
+
+def backup_db() -> Path | None:
+    if not DB_PATH.exists():
+        return None
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    target = DB_PATH.with_name(f"{DB_PATH.name}.bak_{stamp}")
+    shutil.copy2(DB_PATH, target)
+    return target
+
+
 def main() -> None:
     if not LIBRARY_ROOT.exists():
         raise SystemExit(f"Parts library not found: {LIBRARY_ROOT}")
 
+    backup = backup_db()
+    if backup is not None:
+        print(f"Backed up DB to {backup.name}")
+
     rows = read_index()
     now = utcnow_iso()
     imported: list[str] = []
+    relabeled = 0
     with get_conn() as conn:
         for row in rows:
             if not row.get("part_number"):
                 continue
             icon_id, label = upsert_part(conn, row, now)
             imported.append(f"{icon_id}: {label}")
+        relabeled = relabel_existing_nodes(conn)
 
     print(f"Imported {len(imported)} parts from {LIBRARY_ROOT}")
     for item in imported:
         print(f"- {item}")
+    print(f"Relabeled {relabeled} existing diagram node(s) to match icon names")
 
 
 if __name__ == "__main__":
