@@ -308,7 +308,12 @@ def upsert_part(conn: sqlite3.Connection, row: dict[str, str], now: str) -> tupl
     info = read_text(part_dir / "info.txt") if part_dir else ""
     fields = parse_info_fields(info)
 
-    name = clean_text(row.get("phoenix_name")) or fields.get("phoenix contact") or part_number
+    name = (
+        clean_text(row.get("friendly_name"))
+        or clean_text(row.get("phoenix_name"))
+        or fields.get("phoenix contact")
+        or part_number
+    )
     bom_description = clean_text(row.get("bom_description"))
     category = clean_text(row.get("category")) or "Phoenix Contact"
     folder = (clean_text(row.get("folder")) or category)[:80]
