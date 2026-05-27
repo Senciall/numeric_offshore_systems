@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Numeric Offshore Systems</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260519-numeric-brand" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260522-props-cleanup-1" />
 </head>
 <body>
   <header id="app-header">
@@ -96,110 +96,34 @@
     </aside>
 
     <main id="canvas-panel">
-      <div id="diagram-toolbar" class="diagram-toolbar" role="toolbar" aria-label="Diagram toolbar">
-        <div class="diagram-toolbar-primary">
-          <div class="diagram-tool-group" aria-label="Navigation tools">
-            <button type="button" id="canvas-tool-select" class="diagram-tool-btn diagram-tool-btn-labeled is-active" data-toolbar-action="select" title="Select (V)" aria-label="Select">
-              <span class="tool-icon tool-cursor" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Select</span>
-              <span class="diagram-tool-kbd">V</span>
-            </button>
-            <button type="button" id="canvas-tool-pan" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="pan" title="Pan (H)" aria-label="Pan">
-              <span class="tool-hand-icon" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Hand</span>
-              <span class="diagram-tool-kbd">H</span>
-            </button>
-          </div>
-
-          <div class="diagram-tool-group" aria-label="Creation tools">
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-basic-shape="textbox" title="Text (T)" aria-label="Text">
-              <span class="tool-text-icon" aria-hidden="true">T</span>
-              <span class="diagram-tool-label">Text</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="component" title="Component library" aria-label="Component library">
-              <span class="tool-component-icon" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Component</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-basic-shape="rect" title="Rectangle" aria-label="Rectangle">
-              <span class="tool-shape-icon tool-shape-rect" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Rect</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-basic-shape="pill" title="Rounded shape" aria-label="Rounded shape">
-              <span class="tool-shape-icon tool-shape-pill" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Round</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-basic-shape="circle" title="Circle" aria-label="Circle">
-              <span class="tool-shape-icon tool-shape-circle" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Circle</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="line-horizontal" title="Cable" aria-label="Cable">
-              <span class="tool-line-icon" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Cable</span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="arrow-right" title="Connector" aria-label="Connector">
-              <span class="tool-arrow-icon tool-arrow-right" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Connector</span>
-            </button>
-          </div>
-
-          <div class="diagram-tool-group" aria-label="History tools">
-            <button type="button" class="diagram-tool-btn" title="Undo" aria-label="Undo" disabled>
-              <span class="tool-undo-icon" aria-hidden="true"></span>
-            </button>
-            <button type="button" class="diagram-tool-btn" title="Redo" aria-label="Redo" disabled>
-              <span class="tool-redo-icon" aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="diagram-tool-group diagram-tool-group-view" aria-label="View tools">
-            <button type="button" class="diagram-tool-btn" data-toolbar-action="zoom-out" title="Zoom out" aria-label="Zoom out">
-              <span class="tool-zoom-icon tool-zoom-out" aria-hidden="true"></span>
-            </button>
-            <span id="zoom-readout" class="zoom-readout" aria-live="polite">100%</span>
-            <button type="button" class="diagram-tool-btn" data-toolbar-action="zoom-in" title="Zoom in" aria-label="Zoom in">
-              <span class="tool-zoom-icon tool-zoom-in" aria-hidden="true"></span>
-            </button>
-            <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="fit-view" title="Fit to screen" aria-label="Fit to screen">
-              <span class="tool-fit-icon" aria-hidden="true"></span>
-              <span class="diagram-tool-label">Fit</span>
-            </button>
-          </div>
-        </div>
-
-        <div id="diagram-context-tools" class="diagram-context-tools hidden" role="toolbar" aria-label="Selected item actions">
-          <div id="text-format-tools" class="diagram-text-tools hidden" aria-label="Text formatting">
-            <select id="text-font-family" class="toolbar-select" title="Font family" aria-label="Font family">
-              <option value="Inter, Segoe UI, Arial, sans-serif">Inter</option>
-              <option value="Arial, Helvetica, sans-serif">Arial</option>
-              <option value="Georgia, serif">Georgia</option>
-              <option value="Consolas, monospace">Consolas</option>
-            </select>
-            <input type="number" id="text-font-size" class="toolbar-number" min="8" max="72" step="1" value="16" title="Font size" aria-label="Font size" />
-            <button type="button" id="text-bold-btn" class="diagram-tool-btn" title="Bold" aria-label="Bold">
-              <span class="tool-bold-icon" aria-hidden="true">B</span>
-            </button>
-            <button type="button" id="text-italic-btn" class="diagram-tool-btn" title="Italic" aria-label="Italic">
-              <span class="tool-italic-icon" aria-hidden="true">I</span>
-            </button>
-            <input type="color" id="text-color-input" class="toolbar-color" value="#e2e5e3" title="Text color" aria-label="Text color" />
-          </div>
-          <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" title="Align" aria-label="Align" disabled>
-            <span class="tool-align-icon" aria-hidden="true"></span>
-            <span class="diagram-tool-label">Align</span>
-          </button>
-          <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" title="Arrange" aria-label="Arrange" disabled>
-            <span class="tool-arrange-icon" aria-hidden="true"></span>
-            <span class="diagram-tool-label">Arrange</span>
-          </button>
-          <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled" data-toolbar-action="duplicate" title="Duplicate" aria-label="Duplicate">
-            <span class="tool-duplicate-icon" aria-hidden="true"></span>
-            <span class="diagram-tool-label">Duplicate</span>
-          </button>
-          <button type="button" class="diagram-tool-btn diagram-tool-btn-labeled diagram-tool-danger" data-toolbar-action="delete" title="Delete selected item" aria-label="Delete selected item">
-            <span class="tool-trash-icon" aria-hidden="true"></span>
-            <span class="diagram-tool-label">Delete</span>
-          </button>
-        </div>
+      <div id="canvas-top-toolbar" class="canvas-top-toolbar" aria-label="Basic diagram shapes">
+        <span class="canvas-top-toolbar-label">Basic Shapes</span>
+        <button type="button" class="basic-shape-btn" data-basic-shape="rect" title="Rectangle" aria-label="Rectangle">
+          <svg class="shape-tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <rect x="3.5" y="6" width="17" height="12" rx="2"/>
+          </svg>
+        </button>
+        <button type="button" class="basic-shape-btn" data-basic-shape="pill" title="Pill" aria-label="Pill">
+          <svg class="shape-tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <rect x="3.5" y="7.5" width="17" height="9" rx="4.5"/>
+          </svg>
+        </button>
+        <button type="button" class="basic-shape-btn" data-basic-shape="circle" title="Circle" aria-label="Circle">
+          <svg class="shape-tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="7.5"/>
+          </svg>
+        </button>
+        <button type="button" class="basic-shape-btn" data-basic-shape="textbox" title="Text" aria-label="Text">
+          <svg class="shape-tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 7h12M12 7v11M9.5 18h5"/>
+          </svg>
+        </button>
+        <button type="button" class="basic-shape-btn basic-shape-btn-toolbar-wide" data-basic-shape="dinrail" title="DIN rail (drag ends to resize)" aria-label="DIN rail">
+          <span class="shape-tool-preview shape-tool-dinrail" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="basic-shape-btn" data-basic-shape="panel" title="Panel (drag corners to resize)" aria-label="Panel">
+          <span class="shape-tool-preview shape-tool-panel" aria-hidden="true"></span>
+        </button>
       </div>
       <div id="diagram-stage" aria-label="Wire diagram">
         <svg id="wire-layer" aria-hidden="true"></svg>
@@ -237,14 +161,12 @@
               Label
               <input type="text" id="selected-node-label" class="tool-input" maxlength="80" />
             </label>
-            <label class="tool-label">
-              Connection points
-              <div class="range-tool-row">
-                <input type="range" id="selected-node-connector-count" class="tool-range" min="4" max="24" step="1" value="8" disabled />
-                <span id="selected-node-connector-count-readout" class="tool-value">8</span>
-              </div>
-            </label>
             <div id="selected-node-connectors-list" class="connector-editor-list"></div>
+            <div class="tool-row icon-override-row">
+              <button type="button" id="selected-node-icon-replace-btn" class="btn btn-ghost btn-sm">Replace image</button>
+              <button type="button" id="selected-node-icon-reset-btn" class="btn btn-ghost btn-sm" disabled>Reset image</button>
+              <input type="file" id="selected-node-icon-input" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden />
+            </div>
             <div class="tool-row">
               <button type="button" id="delete-selected-node-btn" class="btn btn-danger">Delete item</button>
               <button type="button" id="clear-selection-btn" class="btn btn-ghost">Clear</button>
@@ -326,21 +248,6 @@
           </div>
         </div>
 
-        <div class="tool-section hidden">
-          <div class="tool-section-title">Basic Shapes</div>
-          <div class="basic-shape-toolbar" aria-label="Basic diagram shapes">
-            <button type="button" class="basic-shape-btn" data-basic-shape="rect">
-              <span class="shape-tool-preview shape-tool-rect">Text</span>
-            </button>
-            <button type="button" class="basic-shape-btn" data-basic-shape="pill">
-              <span class="shape-tool-preview shape-tool-pill">Text</span>
-            </button>
-            <button type="button" class="basic-shape-btn" data-basic-shape="circle">
-              <span class="shape-tool-preview shape-tool-circle">Text</span>
-            </button>
-          </div>
-        </div>
-
         <div class="tool-section parts-tool-section">
           <div class="tool-section-title hidden">Parts</div>
           <div class="parts-search-row">
@@ -419,7 +326,7 @@
             </div>
 
             <div class="tool-section creator-doc-section">
-              <div class="tool-section-title">References</div>
+              <div class="tool-section-title" id="creator-docs-title">References<span id="creator-docs-count" class="creator-docs-count" hidden>0</span></div>
               <div class="folder-create-row">
                 <input type="text" id="creator-doc-folder-input" class="tool-input" maxlength="80" placeholder="New reference folder" />
                 <button type="button" id="creator-doc-folder-btn" class="btn btn-ghost">Create</button>
@@ -437,6 +344,33 @@
           </aside>
 
           <main class="creator-main">
+            <div class="creator-canvas-toolbar" role="toolbar" aria-label="Connection dot tools">
+              <button type="button" id="creator-dot-drag" class="canvas-tool-drag" draggable="true" title="Drag onto the canvas to place a connection dot" aria-label="Drag onto canvas to add a connection dot">
+                <span class="canvas-tool-drag-dot" aria-hidden="true"></span>
+                <span class="canvas-tool-drag-text">Drag to place dot</span>
+              </button>
+              <span class="canvas-tool-sep" aria-hidden="true"></span>
+              <div id="creator-dot-multi-badge" class="creator-dot-multi-badge hidden"></div>
+              <label class="canvas-tool-field canvas-tool-field-name">
+                <span class="canvas-tool-field-label">Name</span>
+                <input type="text" id="creator-dot-label" class="tool-input canvas-tool-input" maxlength="50" placeholder="Select a dot to name it" disabled />
+              </label>
+              <label class="canvas-tool-field">
+                <span class="canvas-tool-field-label">Type</span>
+                <select id="creator-dot-role" class="tool-input canvas-tool-input" disabled>
+                  <option value="neutral">Neutral</option>
+                  <option value="input">Input</option>
+                  <option value="output">Output</option>
+                </select>
+              </label>
+              <label class="canvas-tool-field">
+                <span class="canvas-tool-field-label">Color</span>
+                <input type="color" id="creator-dot-color" class="tool-input tool-color-input canvas-tool-color" value="#7ea1c4" disabled />
+              </label>
+              <span class="canvas-tool-spacer" aria-hidden="true"></span>
+              <button type="button" id="creator-dot-delete-btn" class="btn btn-danger btn-sm" disabled>Delete</button>
+              <button type="button" id="creator-dot-reset-btn" class="btn btn-ghost btn-sm">Reset</button>
+            </div>
             <div class="creator-board">
               <div class="creator-preview-wrap">
                 <div id="creator-preview" class="creator-preview">
@@ -456,40 +390,6 @@
           </main>
 
           <aside class="creator-sidebar">
-            <div class="tool-section">
-              <div class="tool-section-title">Connection Dots</div>
-              <div class="creator-dot-actions">
-                <button type="button" id="creator-add-dot-btn" class="btn btn-ghost">+ Add</button>
-                <button type="button" id="creator-dot-delete-btn" class="btn btn-danger" disabled>Delete</button>
-                <button type="button" id="creator-dot-reset-btn" class="btn btn-ghost">Reset</button>
-              </div>
-              <div id="creator-dot-props" class="hidden">
-                <label class="tool-label">
-                  Label
-                  <input type="text" id="creator-dot-label" class="tool-input" maxlength="50" placeholder="Connection label" />
-                </label>
-                <label class="tool-label">
-                  Type
-                  <select id="creator-dot-role" class="tool-input">
-                    <option value="neutral">Neutral</option>
-                    <option value="input">Input</option>
-                    <option value="output">Output</option>
-                  </select>
-                </label>
-                <div class="tool-row">
-                  <label class="tool-label" style="flex:1">
-                    Color
-                    <input type="color" id="creator-dot-color" class="tool-input tool-color-input" value="#7ea1c4" />
-                  </label>
-                  <label class="tool-label">
-                    Size
-                    <input type="number" id="creator-dot-size" class="tool-input" min="3" max="16" step="1" value="5" style="width:64px" />
-                  </label>
-                </div>
-              </div>
-              <div id="creator-dots-list" class="creator-dots-list"></div>
-            </div>
-
             <div class="tool-section creator-parts-section">
               <div class="tool-section-title">Part Library</div>
               <input type="search" id="creator-part-search-input" class="tool-input" placeholder="Search parts" />
@@ -516,6 +416,6 @@
     </div>
   </div>
 
-  <script type="module" src="/static/app.js?v=20260519-numeric-brand"></script>
+  <script type="module" src="/static/app.js?v=20260522-props-cleanup-1"></script>
 </body>
 </html>

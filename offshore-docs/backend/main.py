@@ -11,6 +11,7 @@ import logging
 import mimetypes
 import os
 import re
+import shutil
 import sqlite3
 import uuid
 from pathlib import Path
@@ -22,11 +23,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from db import FILES_DIR, ICONS_DIR, PART_DOCS_DIR, PROJECT_FILES_DIR, PROJECT_ROOT, get_conn, init_db, utcnow_iso
+from db import FILES_DIR, ICONS_DIR, PART_DOCS_DIR, PLATFORM_LOGOS_DIR, PROJECT_FILES_DIR, PROJECT_ROOT, get_conn, init_db, utcnow_iso
 from models import (
     DiagramOut, DiagramSaveIn, DiagramSaveOut,
     EditAuthRequest, FileMeta, FileNotesUpdate, IconDocumentOut, IconFolderCreate, IconFolderOut, IconOut,
-    NodeWithCount, PlatformCreate, PlatformOut, SubdiagramCreate, SubdiagramOut,
+    NodeWithCount, PlatformCreate, PlatformOut, PlatformUpdate, SubdiagramCreate, SubdiagramOut, SubdiagramRename,
     ProjectFolderCreate, ProjectFolderOut, ProjectFolderRename, ProjectFileOut, ProjectTreeOut,
 )
 
@@ -160,6 +161,8 @@ def _parse_links_json(raw: str | None) -> list[dict[str, str]]:
 
 
 def _to_icon_document(row: sqlite3.Row) -> IconDocumentOut:
+    keys = row.keys()
+    is_primary = bool(row["is_primary_image"]) if "is_primary_image" in keys else False
     return IconDocumentOut(
         id=row["id"],
         icon_id=row["icon_id"],
@@ -167,8 +170,68 @@ def _to_icon_document(row: sqlite3.Row) -> IconDocumentOut:
         mime_type=row["mime_type"],
         size_bytes=row["size_bytes"],
         uploaded_at=row["uploaded_at"],
-        folder=(row["folder"] if "folder" in row.keys() and row["folder"] else "Documents"),
+        folder=(row["folder"] if "folder" in keys and row["folder"] else "Documents"),
+        is_primary_image=is_primary,
     )
+
+
+def _sync_primary_image(
+    conn: sqlite3.Connection,
+    icon_id: int,
+    icon_stored_path: str,
+    icon_filename: str,
+    icon_mime: str,
+    now: str,
+) -> None:
+    """Mirror the icon's main PNG into an icon_files row in the 'Images' folder
+    so that browsing the part's References shows the current icon image. If a
+    primary row already exists, its bytes and metadata are replaced. Otherwise
+    the first existing row in the 'Images' folder is promoted and overwritten;
+    if none, a new row is created."""
+    src_path = ICONS_DIR / icon_stored_path
+    if not src_path.exists():
+        return
+
+    target = conn.execute(
+        "SELECT id, stored_path FROM icon_files WHERE icon_id=? AND is_primary_image=1 LIMIT 1",
+        (icon_id,),
+    ).fetchone()
+    if target is None:
+        target = conn.execute(
+            "SELECT id, stored_path FROM icon_files WHERE icon_id=? AND folder='Images' ORDER BY id LIMIT 1",
+            (icon_id,),
+        ).fetchone()
+
+    ext = Path(icon_filename).suffix.lower() or ".png"
+    ref_filename = f"image{ext}"
+    stored_name = f"{icon_id}_{uuid.uuid4().hex[:8]}_{ref_filename}"
+    abs_dest = PART_DOCS_DIR / stored_name
+    PART_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src_path, abs_dest)
+    size_bytes = abs_dest.stat().st_size
+
+    if target is not None:
+        old_path = PART_DOCS_DIR / target["stored_path"]
+        conn.execute(
+            """
+            UPDATE icon_files
+               SET filename=?, stored_path=?, mime_type=?, size_bytes=?,
+                   uploaded_at=?, folder='Images', is_primary_image=1
+             WHERE id=?
+            """,
+            (ref_filename, stored_name, icon_mime, size_bytes, now, target["id"]),
+        )
+        if old_path != abs_dest:
+            old_path.unlink(missing_ok=True)
+    else:
+        conn.execute(
+            """
+            INSERT INTO icon_files
+                (icon_id, filename, stored_path, mime_type, size_bytes, uploaded_at, folder, is_primary_image)
+            VALUES (?,?,?,?,?,?,?,1)
+            """,
+            (icon_id, ref_filename, stored_name, icon_mime, size_bytes, now, "Images"),
+        )
 
 
 def _iconout_from_row(row: sqlite3.Row, documents: list[IconDocumentOut] | None = None) -> IconOut:
@@ -305,9 +368,33 @@ def check_edit_password(req: EditAuthRequest) -> dict[str, bool]:
 def list_platforms() -> list[PlatformOut]:
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, name, description, created_at FROM platforms ORDER BY id"
+            "SELECT id, name, description, created_at, logo_filename FROM platforms ORDER BY id"
         ).fetchall()
-    return [PlatformOut(**dict(r)) for r in rows]
+    return [
+        PlatformOut(
+            id=r["id"],
+            name=r["name"],
+            description=r["description"],
+            created_at=r["created_at"],
+            has_logo=bool(r["logo_filename"]),
+        )
+        for r in rows
+    ]
+
+
+@app.get("/api/platforms/{platform_id}/logo")
+def get_platform_logo(platform_id: int) -> FileResponse:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT logo_filename FROM platforms WHERE id=?", (platform_id,)
+        ).fetchone()
+    if row is None or not row["logo_filename"]:
+        raise HTTPException(status_code=404, detail="No logo for this platform.")
+    path = PLATFORM_LOGOS_DIR / row["logo_filename"]
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Logo file missing on disk.")
+    mime, _ = mimetypes.guess_type(str(path))
+    return FileResponse(path, media_type=mime or "application/octet-stream")
 
 
 @app.post("/api/platforms", response_model=PlatformOut, status_code=201)
@@ -326,6 +413,31 @@ def create_platform(payload: PlatformCreate) -> PlatformOut:
         )
     log.info("Created platform id=%s name=%r", new_id, payload.name)
     return PlatformOut(id=int(new_id), name=payload.name, description=payload.description, created_at=now)
+
+
+@app.patch("/api/platforms/{platform_id}", response_model=PlatformOut)
+def rename_platform(platform_id: int, payload: PlatformUpdate) -> PlatformOut:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, name, description, created_at FROM platforms WHERE id=?",
+            (platform_id,),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Platform not found.")
+        conn.execute("UPDATE platforms SET name=? WHERE id=?", (name, platform_id))
+    return PlatformOut(id=platform_id, name=name, description=row["description"], created_at=row["created_at"])
+
+
+@app.delete("/api/platforms/{platform_id}", status_code=204, response_class=Response)
+def delete_platform(platform_id: int) -> Response:
+    with get_conn() as conn:
+        if not _platform_exists(conn, platform_id):
+            raise HTTPException(status_code=404, detail="Platform not found.")
+        conn.execute("DELETE FROM platforms WHERE id=?", (platform_id,))
+    return Response(status_code=204)
 
 
 # --- Nodes (with file counts) ------------------------------------------------
@@ -538,11 +650,66 @@ def list_subdiagrams(platform_id: int) -> list[SubdiagramOut]:
             FROM subdiagrams sd
             LEFT JOIN nodes n ON n.id = sd.parent_node_id
             WHERE sd.platform_id=?
-            ORDER BY COALESCE(n.label, ''), sd.name
+            ORDER BY (sd.parent_node_id IS NOT NULL), COALESCE(n.label, ''), sd.name
             """,
             (platform_id,),
         ).fetchall()
     return [SubdiagramOut(**dict(row)) for row in rows]
+
+
+@app.post("/api/platforms/{platform_id}/subdiagrams", response_model=SubdiagramOut, status_code=201)
+def create_platform_subdiagram(platform_id: int, payload: SubdiagramCreate) -> SubdiagramOut:
+    name = _clean_diagram_name(payload.name)
+    now = utcnow_iso()
+    empty = json.dumps(_empty_diagram_json())
+    with get_conn() as conn:
+        if not _platform_exists(conn, platform_id):
+            raise HTTPException(status_code=404, detail="Platform not found.")
+        cur = conn.execute(
+            """
+            INSERT INTO subdiagrams (platform_id, parent_node_id, name, drawflow_json, created_at, updated_at)
+            VALUES (?,?,?,?,?,?)
+            """,
+            (platform_id, None, name, empty, now, now),
+        )
+        sub_id = int(cur.lastrowid)
+    return SubdiagramOut(
+        id=sub_id,
+        platform_id=platform_id,
+        parent_node_id=None,
+        parent_label=None,
+        name=name,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@app.patch("/api/subdiagrams/{subdiagram_id}", response_model=SubdiagramOut)
+def rename_subdiagram(subdiagram_id: int, payload: SubdiagramRename) -> SubdiagramOut:
+    name = _clean_diagram_name(payload.name)
+    with get_conn() as conn:
+        row = conn.execute(
+            """
+            SELECT sd.id, sd.platform_id, sd.parent_node_id, n.label AS parent_label,
+                   sd.created_at, sd.updated_at
+            FROM subdiagrams sd
+            LEFT JOIN nodes n ON n.id = sd.parent_node_id
+            WHERE sd.id=?
+            """,
+            (subdiagram_id,),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Sub diagram not found.")
+        conn.execute("UPDATE subdiagrams SET name=?, updated_at=? WHERE id=?", (name, utcnow_iso(), subdiagram_id))
+    return SubdiagramOut(
+        id=subdiagram_id,
+        platform_id=int(row["platform_id"]),
+        parent_node_id=row["parent_node_id"],
+        parent_label=row["parent_label"],
+        name=name,
+        created_at=row["created_at"],
+        updated_at=utcnow_iso(),
+    )
 
 
 @app.post("/api/platforms/{platform_id}/nodes/{node_id}/subdiagrams", response_model=SubdiagramOut, status_code=201)
@@ -814,7 +981,7 @@ def list_icons() -> list[IconOut]:
             "SELECT id, name, filename, mime_type, uploaded_at, connectors_json, folder, description, part_number, links_json FROM icons ORDER BY folder, name"
         ).fetchall()
         doc_rows = conn.execute(
-            "SELECT id, icon_id, filename, mime_type, size_bytes, uploaded_at, folder FROM icon_files ORDER BY folder, filename"
+            "SELECT id, icon_id, filename, mime_type, size_bytes, uploaded_at, folder, is_primary_image FROM icon_files ORDER BY folder, filename"
         ).fetchall()
 
     docs_by_icon: dict[int, list[IconDocumentOut]] = {}
@@ -880,7 +1047,13 @@ async def upload_icon(
             (name_clean, safe_name, rel_path, mime, now, json.dumps(connectors), folder_clean, description_clean, part_number_clean, json.dumps(links)),
         )
         icon_id = int(cur.lastrowid)  # type: ignore[arg-type]
-        icon_docs = await _store_icon_documents(conn, icon_id, documents, document_folders, now)
+        await _store_icon_documents(conn, icon_id, documents, document_folders, now)
+        _sync_primary_image(conn, icon_id, rel_path, safe_name, mime, now)
+        doc_rows = conn.execute(
+            "SELECT id, icon_id, filename, mime_type, size_bytes, uploaded_at, folder, is_primary_image FROM icon_files WHERE icon_id=? ORDER BY folder, filename",
+            (icon_id,),
+        ).fetchall()
+        icon_docs = [_to_icon_document(r) for r in doc_rows]
 
     log.info("Uploaded icon id=%s name=%r", icon_id, name_clean)
     return IconOut(
@@ -985,8 +1158,9 @@ async def update_icon(
         new_docs = await _store_icon_documents(conn, icon_id, documents, document_folders, now)
         if name_clean != old_name:
             _cascade_icon_rename(conn, icon_id, name_clean, now)
+        _sync_primary_image(conn, icon_id, rel_path, safe_name, mime, now)
         doc_rows = conn.execute(
-            "SELECT id, icon_id, filename, mime_type, size_bytes, uploaded_at, folder FROM icon_files WHERE icon_id=? ORDER BY folder, filename",
+            "SELECT id, icon_id, filename, mime_type, size_bytes, uploaded_at, folder, is_primary_image FROM icon_files WHERE icon_id=? ORDER BY folder, filename",
             (icon_id,),
         ).fetchall()
 

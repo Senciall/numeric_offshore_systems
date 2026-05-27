@@ -11,11 +11,16 @@ class PlatformOut(BaseModel):
     name: str
     description: str | None = None
     created_at: str
+    has_logo: bool = False
 
 
 class PlatformCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str | None = None
+
+
+class PlatformUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
 
 
 class DiagramOut(BaseModel):
@@ -36,10 +41,14 @@ class SubdiagramCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
 
 
+class SubdiagramRename(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
 class SubdiagramOut(BaseModel):
     id: int
     platform_id: int
-    parent_node_id: str
+    parent_node_id: str | None = None
     parent_label: str | None = None
     name: str
     created_at: str
@@ -77,6 +86,7 @@ class IconDocumentOut(BaseModel):
     size_bytes: int
     uploaded_at: str
     folder: str = "Documents"
+    is_primary_image: bool = False
 
 
 class IconFolderCreate(BaseModel):

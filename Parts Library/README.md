@@ -2,7 +2,20 @@
 
 Parts sourced from project drawing packages (HM / HO) and physical photo inventory (May 2026).
 
-**40 parts total** across Phoenix Contact, Connectwell, Eaton, Advantech, Cisco, Antaira, NETGEAR, PULS, Mean Well, DEHN, and enclosure inventory.
+**54 parts total** across Phoenix Contact, Connectwell, Eaton, Advantech, Cisco, Antaira, NETGEAR, PULS, Mean Well, DEHN, Schneider, CBI, ABB, ICP DAS, Moxa, Blue Sky / SunForge, and enclosure inventory.
+
+Parts are grouped into 8 categories (matches the diagram-tab Part Library):
+
+| Category | Count | Contents |
+|---|---|---|
+| Terminal Blocks | 14 | Feed-through, ground, knife-disconnect, fused, multi-level |
+| DIN Rail Accessories | 11 | Rails, end stops, end covers, jumper bars, marker strips |
+| Circuit Protection | 8 | Circuit breakers + AC/signal surge protectors |
+| Control & Switching | 2 | Relays, contactors |
+| Power | 4 | DIN-rail PSUs, solar charge controllers |
+| Network | 7 | Switches, firewalls, serial device servers |
+| Compute & I/O | 7 | Industrial PCs, AI gateways, Ethernet I/O, remote displays / comms modules |
+| Enclosures | 1 | Unidentified — pending physical inspection |
 
 Each part folder contains:
 - `README.md` — description, specs, and links

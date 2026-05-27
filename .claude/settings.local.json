@@ -37,7 +37,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\danie\\\\OneDrive\\\\Documentos\\\\numeric_knowledge_hub\" -Recurse -File)",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(git config *)",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "PowerShell($h = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/api/health; Write-Output \"HEALTH $\\($h.StatusCode\\): $\\($h.Content\\)\"; Write-Output \"---\"; $p = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/api/platforms; Write-Output \"PLATFORMS $\\($p.StatusCode\\): $\\($p.Content\\)\"; Write-Output \"---\"; $idx = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/; Write-Output \"INDEX $\\($idx.StatusCode\\) length=$\\($idx.Content.Length\\)\"; Write-Output \\($idx.Content.Substring\\(0,[Math]::Min\\(400,$idx.Content.Length\\)\\)\\))"
     ]
   }
 }

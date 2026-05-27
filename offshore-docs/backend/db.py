@@ -14,6 +14,7 @@ FILES_DIR: Path = DATA_DIR / "files"
 ICONS_DIR: Path = DATA_DIR / "icons"
 PART_DOCS_DIR: Path = DATA_DIR / "part_docs"
 PROJECT_FILES_DIR: Path = DATA_DIR / "project_files"
+PLATFORM_LOGOS_DIR: Path = DATA_DIR / "platform_logos"
 DB_PATH: Path = DATA_DIR / "docs.db"
 
 
@@ -47,7 +48,7 @@ CREATE TABLE IF NOT EXISTS nodes (
 CREATE TABLE IF NOT EXISTS subdiagrams (
     id             INTEGER PRIMARY KEY,
     platform_id    INTEGER NOT NULL,
-    parent_node_id TEXT NOT NULL,
+    parent_node_id TEXT,
     name           TEXT NOT NULL,
     drawflow_json  TEXT NOT NULL,
     created_at     TEXT NOT NULL,
@@ -85,14 +86,15 @@ CREATE TABLE IF NOT EXISTS icons (
 );
 
 CREATE TABLE IF NOT EXISTS icon_files (
-    id           INTEGER PRIMARY KEY,
-    icon_id      INTEGER NOT NULL,
-    filename     TEXT NOT NULL,
-    stored_path  TEXT NOT NULL,
-    mime_type    TEXT NOT NULL,
-    size_bytes   INTEGER NOT NULL,
-    uploaded_at  TEXT NOT NULL,
-    folder       TEXT DEFAULT 'Documents',
+    id               INTEGER PRIMARY KEY,
+    icon_id          INTEGER NOT NULL,
+    filename         TEXT NOT NULL,
+    stored_path      TEXT NOT NULL,
+    mime_type        TEXT NOT NULL,
+    size_bytes       INTEGER NOT NULL,
+    uploaded_at      TEXT NOT NULL,
+    folder           TEXT DEFAULT 'Documents',
+    is_primary_image INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (icon_id) REFERENCES icons(id) ON DELETE CASCADE
 );
 
@@ -151,6 +153,8 @@ _MIGRATIONS = [
     ("icons",      "part_number", "TEXT"),
     ("icons",      "links_json", "TEXT DEFAULT '[]'"),
     ("icon_files", "folder", "TEXT DEFAULT 'Documents'"),
+    ("icon_files", "is_primary_image", "INTEGER NOT NULL DEFAULT 0"),
+    ("platforms",  "logo_filename", "TEXT"),
 ]
 
 
@@ -185,6 +189,43 @@ def _apply_migrations(conn: sqlite3.Connection) -> None:
         except sqlite3.OperationalError as exc:
             if "duplicate column name" not in str(exc).lower():
                 raise
+    _relax_subdiagrams_parent(conn)
+
+
+def _relax_subdiagrams_parent(conn: sqlite3.Connection) -> None:
+    """Drop the NOT NULL constraint on subdiagrams.parent_node_id so platform-level
+    diagrams (no parent node) are supported. No-op if already nullable."""
+    cols = conn.execute("PRAGMA table_info(subdiagrams)").fetchall()
+    parent_col = next((c for c in cols if c["name"] == "parent_node_id"), None)
+    if parent_col is None or not parent_col["notnull"]:
+        return
+    # executescript auto-commits any pending transaction, allowing PRAGMA
+    # foreign_keys to take effect (it is ignored mid-transaction).
+    conn.executescript(
+        """
+        PRAGMA foreign_keys = OFF;
+        BEGIN;
+        CREATE TABLE subdiagrams_new (
+            id             INTEGER PRIMARY KEY,
+            platform_id    INTEGER NOT NULL,
+            parent_node_id TEXT,
+            name           TEXT NOT NULL,
+            drawflow_json  TEXT NOT NULL,
+            created_at     TEXT NOT NULL,
+            updated_at     TEXT NOT NULL,
+            FOREIGN KEY (platform_id) REFERENCES platforms(id) ON DELETE CASCADE,
+            FOREIGN KEY (parent_node_id) REFERENCES nodes(id) ON DELETE CASCADE
+        );
+        INSERT INTO subdiagrams_new (id, platform_id, parent_node_id, name, drawflow_json, created_at, updated_at)
+            SELECT id, platform_id, parent_node_id, name, drawflow_json, created_at, updated_at FROM subdiagrams;
+        DROP TABLE subdiagrams;
+        ALTER TABLE subdiagrams_new RENAME TO subdiagrams;
+        CREATE INDEX IF NOT EXISTS idx_subdiagrams_platform ON subdiagrams(platform_id);
+        CREATE INDEX IF NOT EXISTS idx_subdiagrams_parent   ON subdiagrams(parent_node_id);
+        COMMIT;
+        PRAGMA foreign_keys = ON;
+        """
+    )
 
 
 def _node_html(label: str, icon: str = "generic") -> str:
@@ -296,6 +337,7 @@ def init_db() -> None:
     ICONS_DIR.mkdir(parents=True, exist_ok=True)
     PART_DOCS_DIR.mkdir(parents=True, exist_ok=True)
     PROJECT_FILES_DIR.mkdir(parents=True, exist_ok=True)
+    PLATFORM_LOGOS_DIR.mkdir(parents=True, exist_ok=True)
     with get_conn() as conn:
         conn.executescript(SCHEMA_SQL)
         _apply_migrations(conn)

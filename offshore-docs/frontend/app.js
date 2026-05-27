@@ -6,6 +6,17 @@ const MIN_NODE_W = 34;
 const MIN_NODE_H = 32;
 const MAX_NODE_W = 320;
 const MAX_NODE_H = 320;
+const DINRAIL_HEIGHT = 36;
+const DINRAIL_DEFAULT_W = 480;
+const DINRAIL_MIN_W = 80;
+const DINRAIL_MAX_W = 4000;
+const DINRAIL_SNAP_PX = 24;
+const PANEL_DEFAULT_W = 420;
+const PANEL_DEFAULT_H = 240;
+const PANEL_MIN_W = 80;
+const PANEL_MIN_H = 60;
+const PANEL_MAX_W = 4000;
+const PANEL_MAX_H = 3000;
 const DEFAULT_LABEL_OFFSET = { x: 0, y: 48 };
 const LABEL_OFFSET_LIMIT = { x: 78, y: 82 };
 const WIRE_STRAIGHT_SNAP = 14;
@@ -88,13 +99,13 @@ const SOURCE_FOLDER_NAMES = {
   'WS-C3560CX-8PC-S': 'Cisco_Catalyst_3560CX_WS-C3560CX-8PC-S',
 };
 const PART_GROUP_ORDER = [
-  'Computers & Controllers',
-  'Network',
-  'Power',
-  'Protection',
   'Terminal Blocks',
-  'Fused Terminals',
-  'DIN Rail & Hardware',
+  'DIN Rail Accessories',
+  'Circuit Protection',
+  'Control & Switching',
+  'Power',
+  'Network',
+  'Compute & I/O',
   'Enclosures',
 ];
 const HIDDEN_LIBRARY_GROUPS = new Set(['Built In', 'Unsorted']);
@@ -124,7 +135,7 @@ function makeUniformConnectors(count = DEFAULT_CONNECTOR_COUNT) {
       y: Number(y.toFixed(4)),
       role: 'neutral',
       label: `P${idx + 1}`,
-      size: 5,
+      size: 1,
       color: CONNECTOR_DOT_COLOR,
     };
   });
@@ -149,6 +160,8 @@ const App = {
     creatorPartSearch: '',
     collapsedPartFolders: new Set(),
     expandedPartFolders: new Set(),
+    openPlatformIds: new Set(),
+    expandedCreatorFolders: new Set(),
     expandedNodeIds: new Set(),
     expandedDiagramCache: new Map(),
     expandedDiagramLoading: new Set(),
@@ -166,7 +179,11 @@ const App = {
     wireDragActive: false,
     suppressConnectorClick: false,
     draftPoint: null,
+    draftVia: [],
+    draftPersistent: false,
+    draftDownClient: null,
     panning: null,
+    marquee: null,
     draggingBend: null,
     resizingNode: null,
     copiedNode: null,
@@ -190,7 +207,8 @@ const App = {
       links: [],
       connectors: DEFAULT_CONNECTORS.map((c) => ({ ...c })),
       activeConnectorId: null,
-      addingDot: false,
+      selectedConnectorIds: new Set(),
+      dragPlacingDot: false,
       imageTransform: { tx: 0, ty: 0, scale: 1, rotation: 0 },
       imageMetrics: null,
     },
@@ -333,7 +351,7 @@ const App = {
   },
 
   defaultLabelOffset(node = null) {
-    const h = App.clampNodeHeight(node?.h);
+    const h = App.clampNodeHeight(node?.h, node);
     return { x: 0, y: Math.round(h / 2 + 10) };
   },
 
@@ -346,8 +364,8 @@ const App = {
         maxY: LABEL_OFFSET_LIMIT.y,
       };
     }
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     return {
       minX: Math.round(-w / 2 - 96),
       maxX: Math.round(w / 2 + 96),
@@ -367,12 +385,64 @@ const App = {
     };
   },
 
-  clampNodeWidth(value) {
+  clampNodeWidth(value, node) {
+    if (App.isDinRailNode(node)) {
+      return Math.max(DINRAIL_MIN_W, Math.min(DINRAIL_MAX_W, Math.round(Number(value) || DINRAIL_DEFAULT_W)));
+    }
+    if (App.isPanelNode(node)) {
+      return Math.max(PANEL_MIN_W, Math.min(PANEL_MAX_W, Math.round(Number(value) || PANEL_DEFAULT_W)));
+    }
     return Math.max(MIN_NODE_W, Math.min(MAX_NODE_W, Math.round(Number(value) || DEFAULT_NODE_W)));
   },
 
-  clampNodeHeight(value) {
+  clampNodeHeight(value, node) {
+    if (App.isDinRailNode(node)) return DINRAIL_HEIGHT;
+    if (App.isPanelNode(node)) {
+      return Math.max(PANEL_MIN_H, Math.min(PANEL_MAX_H, Math.round(Number(value) || PANEL_DEFAULT_H)));
+    }
     return Math.max(MIN_NODE_H, Math.min(MAX_NODE_H, Math.round(Number(value) || DEFAULT_NODE_H)));
+  },
+
+  isDinRailIcon(iconKey) {
+    return String(iconKey || '') === 'shape:dinrail';
+  },
+
+  isDinRailNode(node) {
+    return node ? App.isDinRailIcon(node.icon) : false;
+  },
+
+  isPanelIcon(iconKey) {
+    return String(iconKey || '') === 'shape:panel';
+  },
+
+  isPanelNode(node) {
+    return node ? App.isPanelIcon(node.icon) : false;
+  },
+
+  findRailPassengers(rail) {
+    if (!App.isDinRailNode(rail)) return [];
+    const railX = Number(rail.x) || 0;
+    const railY = Number(rail.y) || 0;
+    const railW = App.clampNodeWidth(rail.w, rail);
+    const railH = App.clampNodeHeight(rail.h, rail);
+    const railCenterY = railY + railH / 2;
+    const yTolerance = Math.max(railH, 24);
+    const passengers = [];
+    for (const other of App.state.diagram.nodes || []) {
+      if (!other || String(other.id) === String(rail.id)) continue;
+      if (App.isDinRailNode(other)) continue;
+      if (App.isPanelNode(other)) continue;
+      const ox = Number(other.x) || 0;
+      const oy = Number(other.y) || 0;
+      const ow = App.clampNodeWidth(other.w, other);
+      const oh = App.clampNodeHeight(other.h, other);
+      const cx = ox + ow / 2;
+      const cy = oy + oh / 2;
+      if (cx < railX - 2 || cx > railX + railW + 2) continue;
+      if (Math.abs(cy - railCenterY) > yTolerance) continue;
+      passengers.push(String(other.id));
+    }
+    return passengers;
   },
 
   isCustomIcon(iconKey) {
@@ -454,13 +524,74 @@ const App = {
       ctx.clearRect(0, 0, scanW, scanH);
       ctx.drawImage(img, 0, 0, scanW, scanH);
       const pixels = ctx.getImageData(0, 0, scanW, scanH).data;
+
+      // Detect a solid background by sampling small patches at each corner
+      // (JPEGs and flattened PNGs lack transparency, so alpha alone won't
+      // reveal padding). Averaging a patch is much more stable than reading
+      // a single pixel, and we accept the background if at least 3 of the 4
+      // corner patches agree, so one shadowed corner doesn't disable detection.
+      const patch = Math.max(2, Math.min(6, Math.round(Math.min(scanW, scanH) * 0.04)));
+      const samplePatch = (x0, y0) => {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let count = 0;
+        for (let y = y0; y < y0 + patch && y < scanH; y += 1) {
+          for (let x = x0; x < x0 + patch && x < scanW; x += 1) {
+            const i = (y * scanW + x) * 4;
+            if (pixels[i + 3] <= 8) continue;
+            r += pixels[i];
+            g += pixels[i + 1];
+            b += pixels[i + 2];
+            count += 1;
+          }
+        }
+        if (!count) return null;
+        return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
+      };
+      const cornerPatches = [
+        samplePatch(0, 0),
+        samplePatch(scanW - patch, 0),
+        samplePatch(0, scanH - patch),
+        samplePatch(scanW - patch, scanH - patch),
+      ].filter(Boolean);
+
+      let bg = null;
+      if (cornerPatches.length >= 3) {
+        const colorDelta = (a, b) => Math.max(
+          Math.abs(a[0] - b[0]),
+          Math.abs(a[1] - b[1]),
+          Math.abs(a[2] - b[2]),
+        );
+        let best = null;
+        for (const seed of cornerPatches) {
+          const agree = cornerPatches.filter((c) => colorDelta(seed, c) <= 40);
+          if (agree.length >= 3 && (!best || agree.length > best.length)) {
+            best = agree;
+          }
+        }
+        if (best) {
+          bg = [
+            Math.round(best.reduce((s, c) => s + c[0], 0) / best.length),
+            Math.round(best.reduce((s, c) => s + c[1], 0) / best.length),
+            Math.round(best.reduce((s, c) => s + c[2], 0) / best.length),
+          ];
+        }
+      }
+      const bgThreshold = 36;
+
       let minX = scanW;
       let minY = scanH;
       let maxX = -1;
       let maxY = -1;
       for (let y = 0; y < scanH; y += 1) {
         for (let x = 0; x < scanW; x += 1) {
-          if (pixels[(y * scanW + x) * 4 + 3] <= 8) continue;
+          const i = (y * scanW + x) * 4;
+          if (pixels[i + 3] <= 8) continue;
+          if (bg
+            && Math.abs(pixels[i] - bg[0]) <= bgThreshold
+            && Math.abs(pixels[i + 1] - bg[1]) <= bgThreshold
+            && Math.abs(pixels[i + 2] - bg[2]) <= bgThreshold) continue;
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -541,8 +672,8 @@ const App = {
   },
 
   connectorContentRectForNode(node, width = null, height = null) {
-    const w = width ?? App.clampNodeWidth(node?.w);
-    const h = height ?? App.clampNodeHeight(node?.h);
+    const w = width ?? App.clampNodeWidth(node?.w, node);
+    const h = height ?? App.clampNodeHeight(node?.h, node);
     if (App.isCustomIcon(node?.icon)) App.ensureIconImageMetrics(node.icon);
     return { x: 0, y: 0, w, h };
   },
@@ -563,7 +694,7 @@ const App = {
       y: App.clamp01(conn.y),
       role: ['input', 'output', 'neutral'].includes(conn.role) ? conn.role : 'neutral',
       label: String(conn.label || ''),
-      size: Math.max(3, Math.min(16, Number(conn.size) || 5)),
+      size: 1,
       color: App.normalizeColor(conn.color, '#d6a84f'),
     }));
   },
@@ -758,15 +889,17 @@ const App = {
             icon,
             x: Number.isFinite(Number(node.x)) ? Number(node.x) : 80 + idx * 40,
             y: Number.isFinite(Number(node.y)) ? Number(node.y) : 120 + idx * 40,
-            w: App.clampNodeWidth(node.w),
-            h: App.clampNodeHeight(node.h),
+            w: App.clampNodeWidth(node.w, node),
+            h: App.clampNodeHeight(node.h, node),
             labelOffset: App.normalizeLabelOffset(node.labelOffset, node),
             connectors: [],
             description: String(node.description || ''),
             links: App.normalizeLinks(node.links),
           };
-          normalized.connectors = App.isTextBoxNode(normalized) ? [] : App.cloneConnectors(node.connectors);
+          normalized.connectors = (App.isTextBoxNode(normalized) || App.isDinRailNode(normalized) || App.isPanelNode(normalized)) ? [] : App.cloneConnectors(node.connectors);
           normalized.textStyle = App.normalizeTextStyle(node.textStyle);
+          const iconOverride = App.normalizeIconOverride(node.iconOverride);
+          if (iconOverride) normalized.iconOverride = iconOverride;
           return normalized;
         }),
         wires: wires
@@ -874,8 +1007,8 @@ const App = {
         icon: node.icon,
         x: Math.round(node.x),
         y: Math.round(node.y),
-        w: App.clampNodeWidth(node.w),
-        h: App.clampNodeHeight(node.h),
+        w: App.clampNodeWidth(node.w, node),
+        h: App.clampNodeHeight(node.h, node),
         labelOffset: App.normalizeLabelOffset(node.labelOffset, node),
         connectors: App.nodeConnectors(node),
         textStyle: App.normalizeTextStyle(node.textStyle),
@@ -936,6 +1069,7 @@ const App = {
       ]);
       App.state.platformNodes = nodes;
       App.state.subdiagrams = subdiagrams;
+      if (platformId != null) App.state.openPlatformIds.add(Number(platformId));
       App.renderDiagramTree();
     } catch (err) {
       App.toast(`Could not load project tree: ${err.message}`, 'error');
@@ -1000,6 +1134,11 @@ const App = {
       App.state.editingTextNodeId = null;
       App.state.activeToolbarAction = null;
       App.state.wireDraft = null;
+      App.state.draftPoint = null;
+      App.state.draftVia = [];
+      App.state.draftPersistent = false;
+      App.state.draftDownClient = null;
+      App.state.wireDragActive = false;
       document.body.classList.remove('is-wiring');
       App.state.expandedNodeIds.clear();
       App.renderDiagram();
@@ -1028,11 +1167,16 @@ const App = {
     App.renderDocTree(null, []);
   },
 
-  async openSubdiagram(subdiagramId) {
-    const sub = App.state.subdiagrams.find((item) => Number(item.id) === Number(subdiagramId));
+  async openSubdiagram(subOrId) {
+    const sub = (subOrId && typeof subOrId === 'object')
+      ? subOrId
+      : App.state.subdiagrams.find((item) => Number(item.id) === Number(subOrId));
     if (!sub) return;
-    App.state.currentPlatformId = Number(sub.platform_id);
-    App.el('platform-select').value = String(sub.platform_id);
+    const targetPid = Number(sub.platform_id);
+    const platformChanged = targetPid !== Number(App.state.currentPlatformId);
+    App.state.currentPlatformId = targetPid;
+    App.el('platform-select').value = String(targetPid);
+    if (platformChanged) await App.loadPlatformTree();
     App.state.currentDiagram = { type: 'sub', subdiagramId: Number(sub.id), title: sub.name };
     await App.loadDiagram();
     App.renderDocTree(null, []);
@@ -1102,10 +1246,13 @@ const App = {
     }
   },
 
+  // ── Windows-Explorer-style diagram tree ────────────────────────────────────
+
   renderDiagramTree() {
     const tree = App.el('diagram-tree');
     if (!tree) return;
     tree.innerHTML = '';
+    tree.classList.add('dt-tree');
 
     if (!App.state.platforms.length) {
       tree.innerHTML = '<div class="tree-placeholder">No platforms yet.</div>';
@@ -1113,37 +1260,7 @@ const App = {
     }
 
     for (const platform of App.state.platforms) {
-      const group = document.createElement('details');
-      group.className = 'nav-platform';
-      group.open = Number(platform.id) === Number(App.state.currentPlatformId);
-
-      const header = document.createElement('summary');
-      header.className = 'nav-platform-header';
-      header.innerHTML = `<span>${App.esc(platform.name)}</span>`;
-      group.appendChild(header);
-
-      const body = document.createElement('div');
-      body.className = 'nav-platform-body';
-
-      if (Number(platform.id) === Number(App.state.currentPlatformId)) {
-        body.appendChild(App.buildDiagramTreeDiagram({
-          diagramRef: 'root',
-          label: 'Main diagram',
-          depth: 0,
-          open: App.diagramContainsActive('root'),
-          onOpen: () => App.openRootDiagram(platform.id),
-        }));
-      } else {
-        const root = document.createElement('button');
-        root.type = 'button';
-        root.className = 'nav-row nav-diagram-row';
-        root.innerHTML = '<span class="nav-icon">D</span><span class="nav-label">Main diagram</span>';
-        root.addEventListener('click', () => App.openRootDiagram(platform.id));
-        body.appendChild(root);
-      }
-
-      group.appendChild(body);
-      tree.appendChild(group);
+      tree.appendChild(App.buildDtPlatform(platform));
     }
   },
 
@@ -1158,57 +1275,487 @@ const App = {
     return false;
   },
 
-  buildDiagramTreeDiagram({ diagramRef, label, depth, open, onOpen }) {
-    const group = document.createElement('details');
-    group.className = 'nav-diagram-group';
-    group.open = Boolean(open);
-    group.style.setProperty('--depth', String(depth));
+  buildDtPlatform(platform) {
+    const pid = Number(platform.id);
+    const isCurrent = pid === Number(App.state.currentPlatformId);
+    const isOpen = App.state.openPlatformIds.has(pid);
+    const wrap = document.createElement('div');
+    wrap.className = 'dt-node dt-node--platform' + (isOpen ? ' is-open' : '');
 
-    const summary = document.createElement('summary');
-    summary.className = 'nav-diagram-header';
+    const card = document.createElement('div');
+    card.className = 'dt-platform-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'nav-row nav-diagram-row';
-    button.classList.toggle('is-active', App.currentDiagramRef() === diagramRef);
-    button.innerHTML = `<span class="nav-icon">D</span><span class="nav-label">${App.esc(label)}</span>`;
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      onOpen();
+    const chev = document.createElement('span');
+    chev.className = 'dt-platform-chev';
+    card.appendChild(chev);
+
+    const thumb = document.createElement('span');
+    thumb.className = 'dt-platform-thumb';
+    if (platform.has_logo) {
+      const img = document.createElement('img');
+      img.className = 'dt-platform-thumb-img';
+      img.src = `/api/platforms/${pid}/logo`;
+      img.alt = '';
+      thumb.appendChild(img);
+    } else {
+      thumb.innerHTML = App.dtIconSvg('rig');
+    }
+    card.appendChild(thumb);
+
+    const titleWrap = document.createElement('span');
+    titleWrap.className = 'dt-platform-title';
+    const name = document.createElement('span');
+    name.className = 'dt-platform-name';
+    name.textContent = platform.name;
+    const subtitle = document.createElement('span');
+    subtitle.className = 'dt-platform-subtitle';
+    if (isCurrent) {
+      const platSubsAll = (App.state.subdiagrams || []).filter((s) => s.parent_node_id == null);
+      const diagramCount = 1 + platSubsAll.length;
+      subtitle.textContent = `${diagramCount} diagram${diagramCount === 1 ? '' : 's'}`;
+    } else {
+      subtitle.textContent = 'rig';
+    }
+    titleWrap.append(name, subtitle);
+    card.appendChild(titleWrap);
+
+    const body = document.createElement('div');
+    body.className = 'dt-platform-body';
+
+    const toggleOpen = () => {
+      const willOpen = !wrap.classList.contains('is-open');
+      wrap.classList.toggle('is-open', willOpen);
+      if (willOpen) {
+        App.state.openPlatformIds.add(pid);
+        App.populateDtPlatformBody(body, platform);
+      } else {
+        App.state.openPlatformIds.delete(pid);
+        body.innerHTML = '';
+      }
+    };
+    card.addEventListener('click', toggleOpen);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOpen(); }
+    });
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      App.platformContextMenu(e, platform);
     });
 
-    summary.appendChild(button);
-    group.appendChild(summary);
-    group.appendChild(App.buildDiagramTreeBranch(diagramRef, depth + 1));
-    return group;
+    wrap.appendChild(card);
+    wrap.appendChild(body);
+
+    if (isOpen) App.populateDtPlatformBody(body, platform);
+    return wrap;
   },
 
-  buildDiagramTreeBranch(diagramRef, depth) {
-    const wrap = document.createElement('div');
-    wrap.className = 'nav-branch';
-    wrap.style.setProperty('--depth', String(depth));
-    const nodes = App.nodesForDiagram(diagramRef);
-    const allSubs = nodes.flatMap(node => App.subdiagramsForNode(node.id));
+  async populateDtPlatformBody(body, platform) {
+    const pid = Number(platform.id);
+    const isCurrent = pid === Number(App.state.currentPlatformId);
 
-    // Drawings folder
-    const drawingsOpen = allSubs.some(sub => App.diagramContainsActive(`sub:${sub.id}`));
-    const drawingsChildren = allSubs.map(sub => App.buildDiagramTreeDiagram({
-      diagramRef: `sub:${sub.id}`,
-      label: sub.name,
-      depth,
-      open: App.diagramContainsActive(`sub:${sub.id}`),
-      onOpen: () => App.openSubdiagram(sub.id),
+    body.innerHTML = '<div class="dt-loading">Loading…</div>';
+
+    let subs;
+    try {
+      subs = isCurrent
+        ? (App.state.subdiagrams || [])
+        : await App.api(`/api/platforms/${pid}/subdiagrams`);
+    } catch (err) {
+      body.innerHTML = `<div class="dt-loading">Error: ${App.esc(err.message)}</div>`;
+      return;
+    }
+    body.innerHTML = '';
+
+    body.appendChild(App.makeDtSectionLabel('Diagrams'));
+    const diagGrid = document.createElement('div');
+    diagGrid.className = 'dt-tile-grid';
+    diagGrid.appendChild(App.buildDtDiagramTile({
+      label: 'Main Diagram', kind: 'root', platform, subdiagram: null, isCurrent,
     }));
-    wrap.appendChild(App.buildTreeFolder('Drawings', drawingsOpen, 'No drawings', drawingsChildren));
+    for (const sub of subs.filter((s) => s.parent_node_id == null)) {
+      diagGrid.appendChild(App.buildDtDiagramTile({
+        label: sub.name, kind: 'platform-sub', platform, subdiagram: sub, isCurrent,
+      }));
+    }
+    body.appendChild(diagGrid);
 
-    // Project file explorer
-    const explorerEl = document.createElement('div');
-    explorerEl.className = 'nav-explorer-wrap';
-    App.renderProjectExplorer(explorerEl, diagramRef);
-    wrap.appendChild(explorerEl);
+    const docWrap = document.createElement('div');
+    docWrap.className = 'nav-explorer-wrap dt-doc-wrap';
+    docWrap.dataset.dtPlatformId = String(pid);
+    body.appendChild(docWrap);
+    App.renderDtPlatformDocs(docWrap, pid, 'root');
+  },
 
+  buildDtDiagramTile({ label, kind, platform, subdiagram, isCurrent }) {
+    const diagramRef = kind === 'root' ? 'root' : `sub:${subdiagram.id}`;
+    const isActive = isCurrent && App.currentDiagramRef() === diagramRef;
+
+    const cell = document.createElement('div');
+    cell.className = 'dt-tile dt-diagram-tile' + (isActive ? ' is-active' : '');
+    cell.setAttribute('role', 'button');
+    cell.tabIndex = 0;
+
+    const preview = document.createElement('div');
+    preview.className = 'dt-tile-preview';
+    preview.innerHTML = App.dtIconSvg('diagram-big');
+    cell.appendChild(preview);
+
+    const lbl = document.createElement('span');
+    lbl.className = 'dt-tile-label';
+    lbl.title = label;
+    lbl.textContent = label;
+    cell.appendChild(lbl);
+
+    const activate = () => {
+      if (kind === 'root') App.openRootDiagram(platform.id);
+      else if (subdiagram) App.openSubdiagram(subdiagram);
+    };
+    cell.addEventListener('click', activate);
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+    cell.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      App.diagramContextMenu(e, { kind, diagramRef, platform, subdiagram, label });
+    });
+    return cell;
+  },
+
+  makeDtSectionLabel(text, onAdd) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dt-section-label';
+    const t = document.createElement('span');
+    t.textContent = text;
+    wrap.appendChild(t);
+    if (onAdd) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dt-section-add';
+      btn.textContent = '+';
+      btn.title = `Add ${text.toLowerCase()}`;
+      btn.addEventListener('click', onAdd);
+      wrap.appendChild(btn);
+    }
     return wrap;
+  },
+
+  async renderDtPlatformDocs(container, pid, diagramRef) {
+    container.innerHTML = '';
+    container.dataset.dtPlatformId = String(pid);
+
+    container.appendChild(App.makeDtSectionLabel('Documents', () => {
+      if (!App.state.editMode) { App.toast('Enable edit mode first', 'info'); return; }
+      App.createProjectFolder(pid, diagramRef, null, container);
+    }));
+
+    const body = document.createElement('div');
+    body.className = 'dt-tile-grid dt-doc-grid nav-explorer-body';
+    body.dataset.explorerRef = diagramRef;
+    body.dataset.explorerPid = String(pid);
+    container.appendChild(body);
+
+    try {
+      const tree = await App.api(`/api/platforms/${pid}/project-tree?diagram_ref=${encodeURIComponent(diagramRef)}`);
+      App.renderDtExplorerContents(body, tree.folders, tree.files, pid, diagramRef, null, container);
+    } catch (err) {
+      body.innerHTML = `<div class="dt-loading">Error: ${App.esc(err.message)}</div>`;
+    }
+  },
+
+  renderDtExplorerContents(body, folders, files, pid, diagramRef, folderId, container) {
+    body.innerHTML = '';
+    App.attachDropZone(body, pid, diagramRef, folderId, container);
+    if (!folders.length && !files.length) {
+      const hint = document.createElement('div');
+      hint.className = 'dt-empty';
+      hint.textContent = 'Drop files here';
+      body.appendChild(hint);
+    }
+    for (const folder of folders) body.appendChild(App.buildDtFolderTile(folder, pid, diagramRef, container));
+    for (const file of files) body.appendChild(App.buildDtFileTile(file, pid, diagramRef, container));
+  },
+
+  buildDtFolderTile(folder, pid, diagramRef, container) {
+    const det = document.createElement('details');
+    det.className = 'dt-folder';
+    det.dataset.folderId = folder.id;
+
+    const summary = document.createElement('summary');
+    summary.className = 'dt-folder-summary nav-xfolder-header';
+    summary.dataset.xFolderId = folder.id;
+    summary.dataset.xFolderName = folder.name;
+    summary.dataset.xPid = pid;
+    summary.dataset.xRef = diagramRef;
+
+    const chev = document.createElement('span');
+    chev.className = 'dt-folder-chev';
+    summary.appendChild(chev);
+
+    const thumb = document.createElement('span');
+    thumb.className = 'dt-folder-thumb';
+    thumb.innerHTML = App.dtIconSvg('folder-big');
+    summary.appendChild(thumb);
+
+    const name = document.createElement('span');
+    name.className = 'dt-folder-name';
+    name.textContent = folder.name;
+    summary.appendChild(name);
+
+    const childCount = (folder.children?.length || 0) + (folder.files?.length || 0);
+    if (childCount) {
+      const count = document.createElement('span');
+      count.className = 'dt-folder-count';
+      count.textContent = String(childCount);
+      summary.appendChild(count);
+    }
+    det.appendChild(summary);
+
+    const items = document.createElement('div');
+    items.className = 'dt-folder-items dt-tile-grid';
+    if (!childCount) {
+      const hint = document.createElement('div');
+      hint.className = 'dt-empty';
+      hint.textContent = 'Drop files here';
+      items.appendChild(hint);
+    }
+    for (const sub of folder.children || []) items.appendChild(App.buildDtFolderTile(sub, pid, diagramRef, container));
+    for (const file of folder.files || []) items.appendChild(App.buildDtFileTile(file, pid, diagramRef, container));
+    det.appendChild(items);
+
+    App.attachDropZone(items, pid, diagramRef, folder.id, container);
+    return det;
+  },
+
+  buildDtFileTile(file, pid, diagramRef, container) {
+    void container;
+    const cell = document.createElement('div');
+    cell.className = 'dt-tile dt-file-tile nav-xfile';
+    cell.dataset.xFileId = file.id;
+    cell.dataset.xFilename = file.filename;
+    cell.dataset.xMime = file.mime_type;
+    cell.dataset.xPid = pid;
+    cell.dataset.xRef = diagramRef;
+    cell.setAttribute('role', 'button');
+    cell.tabIndex = 0;
+
+    const preview = document.createElement('div');
+    preview.className = 'dt-tile-preview';
+    const emoji = document.createElement('span');
+    emoji.className = 'dt-file-emoji';
+    emoji.textContent = App.fileEmoji(file.mime_type);
+    preview.appendChild(emoji);
+    cell.appendChild(preview);
+
+    const lbl = document.createElement('span');
+    lbl.className = 'dt-tile-label';
+    lbl.title = file.filename;
+    lbl.textContent = file.filename;
+    cell.appendChild(lbl);
+
+    cell.addEventListener('click', () => App.openProjectFile(file));
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); App.openProjectFile(file); }
+    });
+    return cell;
+  },
+
+  makeDtRow({ kind, label, icon, hasChevron, isActive, onClick, onChevron, onContext }) {
+    const row = document.createElement('div');
+    row.className = `dt-row dt-row--${kind}` + (isActive ? ' is-active' : '');
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+
+    const chev = document.createElement('span');
+    chev.className = 'dt-chevron' + (hasChevron ? '' : ' is-empty');
+    if (hasChevron) {
+      chev.innerHTML = '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M4 2.5l4 3.5-4 3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      chev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        (onChevron || onClick)?.(e);
+      });
+    }
+    row.appendChild(chev);
+
+    const iconEl = document.createElement('span');
+    iconEl.className = 'dt-icon dt-icon--' + icon;
+    iconEl.innerHTML = App.dtIconSvg(icon);
+    row.appendChild(iconEl);
+
+    const text = document.createElement('span');
+    text.className = 'dt-label';
+    text.textContent = label;
+    text.title = label;
+    row.appendChild(text);
+
+    if (onClick) {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.dt-chevron')) return;
+        onClick(e);
+      });
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); }
+      });
+    }
+    if (onContext) {
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onContext(e);
+      });
+    }
+    return row;
+  },
+
+  dtIconSvg(kind) {
+    if (kind === 'rig') {
+      return '<svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<path d="M14 3 16 7 18 3"/>'
+        + '<path d="M13.4 7h5.2M12.8 11h6.4M12.2 15h7.6"/>'
+        + '<rect x="5.5" y="15" width="21" height="4.5" rx="0.6"/>'
+        + '<path d="M8.5 19.5 7 28M16 19.5 16 28M23.5 19.5 25 28"/>'
+        + '<path d="M2 28h28"/>'
+        + '<path d="M3.5 30c1.5-1 2.5-1 4 0s2.5 1 4 0 2.5-1 4 0 2.5 1 4 0 2.5-1 4 0 2.5 1 4 0" opacity=".6"/>'
+        + '</svg>';
+    }
+    if (kind === 'platform') {
+      return '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2 14V5l4-2v1.6l4-1.8V6l4 2v6H2zm1.5-1.5h2.5v-1.7H3.5v1.7zm4 0h2.5v-1.7H7.5v1.7zm0-3.2h2.5V7.6H7.5v1.7zm4 3.2H14v-1.7h-2.5v1.7zm0-3.2H14V7.6h-2.5v1.7z"/></svg>';
+    }
+    if (kind === 'diagram') {
+      return '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><rect x="3.5" y="2.25" width="9" height="11.5" rx="1.2"/><path d="M5.6 5.5h4.8M5.6 8h4.8M5.6 10.5h3.2"/></svg>';
+    }
+    if (kind === 'folder') {
+      return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M1.5 4.6a.9.9 0 01.9-.9h3.3l1.3 1.3h7a.9.9 0 01.9.9v.6H1.5V4.6z" fill="#dcb672"/><path d="M1.5 6.5h13v6.4a.9.9 0 01-.9.9H2.4a.9.9 0 01-.9-.9V6.5z" fill="#eecf86"/></svg>';
+    }
+    if (kind === 'folder-big') {
+      return '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">'
+        + '<path d="M2 9.6a1.7 1.7 0 011.7-1.7h6.6l2.4 2.4h13.6a1.7 1.7 0 011.7 1.7v1.5H2V9.6z" fill="#dcb672"/>'
+        + '<path d="M2 13.2h28v12.6a1.7 1.7 0 01-1.7 1.7H3.7A1.7 1.7 0 012 25.8V13.2z" fill="#eecf86"/>'
+        + '</svg>';
+    }
+    if (kind === 'diagram-big') {
+      return '<svg viewBox="0 0 32 32" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<rect x="6" y="3.5" width="20" height="25" rx="2"/>'
+        + '<path d="M10 9h12M10 13.5h12M10 18h8M10 22.5h6"/>'
+        + '</svg>';
+    }
+    return '';
+  },
+
+  // ── Context menus on the diagram tree ──────────────────────────────────────
+
+  platformContextMenu(e, platform) {
+    const items = [
+      { label: 'Open',                action: () => App.openRootDiagram(platform.id) },
+      'sep',
+      { label: '＋  New diagram',     action: () => App.createPlatformSubdiagram(platform.id) },
+    ];
+    if (App.state.editMode) {
+      items.push('sep');
+      items.push({ label: '✏️  Rename rig',  action: () => App.renamePlatform(platform) });
+      items.push({ label: '🗑️  Delete rig',  danger: true, action: () => App.deletePlatform(platform) });
+    } else {
+      items.push('sep');
+      items.push({ label: '🔒  Edit mode required', action: () => App.openPasswordModal() });
+    }
+    App.showContextMenu(items, e.clientX, e.clientY);
+  },
+
+  diagramContextMenu(e, { kind, diagramRef, platform, subdiagram }) {
+    const open = () => kind === 'root' ? App.openRootDiagram(platform.id) : App.openSubdiagram(subdiagram.id);
+    const items = [
+      { label: 'Open',            action: open },
+      'sep',
+      { label: '＋  New diagram', action: () => App.createPlatformSubdiagram(platform.id) },
+    ];
+    if (App.state.editMode && kind !== 'root') {
+      items.push('sep');
+      items.push({ label: '✏️  Rename',  action: () => App.renameSubdiagram(subdiagram) });
+      items.push({ label: '🗑️  Delete',  danger: true, action: () => App.deleteSubdiagram(subdiagram) });
+    } else if (!App.state.editMode) {
+      items.push('sep');
+      items.push({ label: '🔒  Edit mode required', action: () => App.openPasswordModal() });
+    }
+    App.showContextMenu(items, e.clientX, e.clientY);
+  },
+
+  async createPlatformSubdiagram(platformId) {
+    if (!App.state.editMode) { App.openPasswordModal(); return; }
+    const name = prompt('Diagram name');
+    if (!name || !name.trim()) return;
+    try {
+      await App.saveDiagram({ quiet: true });
+      const sub = await App.api(`/api/platforms/${platformId}/subdiagrams`, {
+        method: 'POST',
+        body: { name: name.trim() },
+      });
+      await App.loadPlatformTree();
+      await App.openSubdiagram(sub.id);
+      App.toast(`Created diagram: ${sub.name}`, 'success');
+    } catch (err) {
+      App.toast(`Create diagram failed: ${err.message}`, 'error');
+    }
+  },
+
+  async renameSubdiagram(sub) {
+    if (!App.state.editMode) { App.openPasswordModal(); return; }
+    const name = prompt('Rename diagram', sub.name);
+    if (!name || !name.trim() || name.trim() === sub.name) return;
+    try {
+      await App.api(`/api/subdiagrams/${sub.id}`, { method: 'PATCH', body: { name: name.trim() } });
+      await App.loadPlatformTree();
+      if (App.state.currentDiagram?.type === 'sub' && Number(App.state.currentDiagram.subdiagramId) === Number(sub.id)) {
+        App.state.currentDiagram.title = name.trim();
+      }
+    } catch (err) {
+      App.toast(`Rename failed: ${err.message}`, 'error');
+    }
+  },
+
+  async deleteSubdiagram(sub) {
+    if (!App.state.editMode) { App.openPasswordModal(); return; }
+    if (!confirm(`Delete diagram "${sub.name}"? Its contents will be lost.`)) return;
+    try {
+      await App.api(`/api/subdiagrams/${sub.id}`, { method: 'DELETE' });
+      if (App.currentDiagramRef() === `sub:${sub.id}`) {
+        await App.openRootDiagram(sub.platform_id);
+      } else {
+        await App.loadPlatformTree();
+      }
+      App.toast('Diagram deleted', 'success');
+    } catch (err) {
+      App.toast(`Delete failed: ${err.message}`, 'error');
+    }
+  },
+
+  async renamePlatform(platform) {
+    if (!App.state.editMode) { App.openPasswordModal(); return; }
+    const name = prompt('Rename rig', platform.name);
+    if (!name || !name.trim() || name.trim() === platform.name) return;
+    try {
+      await App.api(`/api/platforms/${platform.id}`, { method: 'PATCH', body: { name: name.trim() } });
+      await App.loadPlatforms();
+    } catch (err) {
+      App.toast(`Rename failed: ${err.message}`, 'error');
+    }
+  },
+
+  async deletePlatform(platform) {
+    if (!App.state.editMode) { App.openPasswordModal(); return; }
+    if (!confirm(`Delete rig "${platform.name}" and ALL its diagrams and files? This cannot be undone.`)) return;
+    try {
+      await App.api(`/api/platforms/${platform.id}`, { method: 'DELETE' });
+      await App.loadPlatforms();
+      const first = App.state.platforms[0];
+      if (first) await App.openRootDiagram(first.id);
+      else App.renderDiagramTree();
+      App.toast('Rig deleted', 'success');
+    } catch (err) {
+      App.toast(`Delete failed: ${err.message}`, 'error');
+    }
   },
 
   // ── Context menu ──────────────────────────────────────────────────────────
@@ -1270,6 +1817,15 @@ const App = {
   },
 
   async renderProjectExplorer(container, diagramRef) {
+    if (container?.classList?.contains('dt-doc-wrap')) {
+      const pidFromAttr = Number(container.dataset.dtPlatformId);
+      const pid = Number.isFinite(pidFromAttr) && pidFromAttr > 0
+        ? pidFromAttr
+        : App.state.currentPlatformId;
+      if (!pid) return;
+      return App.renderDtPlatformDocs(container, pid, diagramRef);
+    }
+
     const pid = App.state.currentPlatformId;
     if (!pid) return;
 
@@ -1590,8 +2146,8 @@ const App = {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const node of nodes) {
       const pos = App.visualNodePosition(node);
-      const w = App.clampNodeWidth(node.w);
-      const h = App.clampNodeHeight(node.h);
+      const w = App.clampNodeWidth(node.w, node);
+      const h = App.clampNodeHeight(node.h, node);
       minX = Math.min(minX, pos.x);
       minY = Math.min(minY, pos.y);
       maxX = Math.max(maxX, pos.x + w);
@@ -1713,8 +2269,8 @@ const App = {
   nodeBounds(node, offset = { x: 0, y: 0 }, margin = 0) {
     const x = (Number(node.x) || 0) + (offset.x || 0);
     const y = (Number(node.y) || 0) + (offset.y || 0);
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     return {
       left: x - margin,
       top: y - margin,
@@ -1725,8 +2281,8 @@ const App = {
 
   nodeCenter(node, x = Number(node.x) || 0, y = Number(node.y) || 0) {
     return {
-      x: x + App.clampNodeWidth(node.w) / 2,
-      y: y + App.clampNodeHeight(node.h) / 2,
+      x: x + App.clampNodeWidth(node.w, node) / 2,
+      y: y + App.clampNodeHeight(node.h, node) / 2,
     };
   },
 
@@ -1794,18 +2350,22 @@ const App = {
 
   snapNodeToCenterlines(node, x, y) {
     const threshold = CENTERLINE_SNAP_PX / App.viewport().zoom;
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     const center = { x: x + w / 2, y: y + h / 2 };
     let snapX = null;
     let snapY = null;
+    let railSnap = null;
+
+    const isRail = App.isDinRailNode(node);
+    const railSnapThreshold = DINRAIL_SNAP_PX / App.viewport().zoom;
 
     for (const other of App.state.diagram.nodes || []) {
       if (String(other.id) === String(node.id)) continue;
       const otherX = Number(other.x) || 0;
       const otherY = Number(other.y) || 0;
-      const otherW = App.clampNodeWidth(other.w);
-      const otherH = App.clampNodeHeight(other.h);
+      const otherW = App.clampNodeWidth(other.w, other);
+      const otherH = App.clampNodeHeight(other.h, other);
       const otherCenter = App.nodeCenter(other, otherX, otherY);
       const dx = Math.abs(center.x - otherCenter.x);
       const dy = Math.abs(center.y - otherCenter.y);
@@ -1815,6 +2375,15 @@ const App = {
       }
       if (dy <= threshold && (!snapY || dy < snapY.distance)) {
         snapY = { distance: dy, value: otherCenter.y, other: { x: otherX, y: otherY, w: otherW, h: otherH } };
+      }
+
+      // Strong "midline" snap: when a non-rail node is dragged horizontally
+      // within a rail's extent, snap its vertical center to the rail's mid Y.
+      if (!isRail && App.isDinRailNode(other)) {
+        const overlaps = center.x >= otherX - 4 && center.x <= otherX + otherW + 4;
+        if (overlaps && dy <= railSnapThreshold && (!railSnap || dy < railSnap.distance)) {
+          railSnap = { distance: dy, value: otherCenter.y, other: { x: otherX, y: otherY, w: otherW, h: otherH } };
+        }
       }
     }
 
@@ -1828,7 +2397,15 @@ const App = {
       guides.push({ axis: 'x', value: snapX.value, from: top, to: bottom });
     }
 
-    if (snapY) {
+    if (railSnap) {
+      next.y = Math.round(railSnap.value - h / 2);
+      guides.push({
+        axis: 'y',
+        value: railSnap.value,
+        from: railSnap.other.x - 18,
+        to: railSnap.other.x + railSnap.other.w + 18,
+      });
+    } else if (snapY) {
       next.y = Math.round(snapY.value - h / 2);
       const left = Math.min(next.x, snapY.other.x) - 18;
       const right = Math.max(next.x + w, snapY.other.x + snapY.other.w) + 18;
@@ -1841,8 +2418,8 @@ const App = {
   expandedNodeBounds(node, offset = { x: 0, y: 0 }, margin = 0) {
     const x = (Number(node.x) || 0) + (offset.x || 0);
     const y = (Number(node.y) || 0) + (offset.y || 0);
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     const centerX = x + w / 2;
     const centerY = y + h / 2;
     return {
@@ -1925,8 +2502,8 @@ const App = {
     const el = document.createElement('div');
     const stagePoint = App.boardToStage(App.visualNodePosition(node));
     const vp = App.viewport();
-    const nodeW = App.clampNodeWidth(node.w);
-    const nodeH = App.clampNodeHeight(node.h);
+    const nodeW = App.clampNodeWidth(node.w, node);
+    const nodeH = App.clampNodeHeight(node.h, node);
     const isSelected = App.state.selectedNodeId === String(node.id) || App.state.selectedNodeIds.has(String(node.id));
     el.className = 'diagram-node';
     el.dataset.nodeId = node.id;
@@ -1938,6 +2515,8 @@ const App = {
     el.style.transformOrigin = 'top left';
     el.classList.toggle('is-selected', isSelected);
     el.classList.toggle('is-group-selected', App.state.selectedNodeIds.has(String(node.id)) && App.state.selectedNodeIds.size > 1);
+    el.classList.toggle('is-dinrail', App.isDinRailNode(node));
+    el.classList.toggle('is-panel', App.isPanelNode(node));
     const expandedSub = App.state.expandedNodeIds.has(String(node.id))
       ? App.primarySubdiagramForNode(node.id)
       : null;
@@ -1978,6 +2557,19 @@ const App = {
     badge.dataset.count = String(docCount);
     badge.textContent = String(docCount);
 
+    const customized = App.isNodeCustomized(node);
+    let customBadge = null;
+    if (customized) {
+      customBadge = document.createElement('div');
+      customBadge.className = 'node-customized-badge';
+      customBadge.title = 'This part has been customized for this diagram';
+      customBadge.textContent = '*';
+      customBadge.addEventListener('click', (event) => {
+        event.stopPropagation();
+        App.selectNode(node.id);
+      });
+    }
+
     if (expandedSub) {
       el.appendChild(App.buildExpandedPartPanel(node, expandedSub));
     } else {
@@ -1995,8 +2587,10 @@ const App = {
       el.append(iconFrame);
       if (!inlineLabel) el.append(label);
       el.append(badge);
+      if (customBadge) el.append(customBadge);
       if (App.state.editMode) {
-        for (const handle of ['nw', 'ne', 'se', 'sw']) {
+        const handles = App.isDinRailNode(node) ? ['e', 'w'] : ['nw', 'ne', 'se', 'sw'];
+        for (const handle of handles) {
           el.appendChild(App.buildNodeResizeHandle(node, handle));
         }
       }
@@ -2007,6 +2601,10 @@ const App = {
       if (!App.nodeHitTest(event)) return;
       if (App.state.didDragNode) {
         App.state.didDragNode = false;
+        return;
+      }
+      if (event.shiftKey && App.state._suppressShiftClickToggle) {
+        App.state._suppressShiftClickToggle = false;
         return;
       }
       App.selectNode(node.id, { additive: event.shiftKey });
@@ -2030,7 +2628,10 @@ const App = {
       if (event.target.closest('.basic-shape-text.is-editable')) return;
       if (App.isTextBoxNode(node) && event.target.closest('.basic-shape-text')) return;
       if (!event.target.closest('.node-icon-frame, .expanded-part-panel') || !App.nodeHitTest(event)) return;
-      App.startNodeDrag(event, node.id, { group: event.shiftKey });
+      const inMultiSelection =
+        App.state.selectedNodeIds.size > 1 &&
+        App.state.selectedNodeIds.has(String(node.id));
+      App.startNodeDrag(event, node.id, { group: event.shiftKey || inMultiSelection });
     });
 
     return el;
@@ -2241,8 +2842,8 @@ const App = {
   subdiagramConnectorBoardPoint(node, connector) {
     const nodeX = Number(node.x) || 0;
     const nodeY = Number(node.y) || 0;
-    const nodeW = App.clampNodeWidth(node.w);
-    const nodeH = App.clampNodeHeight(node.h);
+    const nodeW = App.clampNodeWidth(node.w, node);
+    const nodeH = App.clampNodeHeight(node.h, node);
     const rect = App.connectorContentRectForNode(node, nodeW, nodeH);
     return {
       x: nodeX + rect.x + App.clamp01(connector.x) * rect.w,
@@ -2374,8 +2975,8 @@ const App = {
 
   positionNodeLabel(labelEl, node) {
     const offset = App.normalizeLabelOffset(node.labelOffset, node);
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     labelEl.style.left = `calc(50% + ${offset.x}px)`;
     labelEl.style.top = `calc(50% + ${offset.y}px)`;
     if (offset.y < -h / 2) {
@@ -2406,6 +3007,18 @@ const App = {
 
   renderIcon(container, iconKey, label = '', node = null) {
     container.innerHTML = '';
+    if (App.isDinRailIcon(iconKey)) {
+      const w = Number(node?.w) || DINRAIL_DEFAULT_W;
+      const h = Number(node?.h) || DINRAIL_HEIGHT;
+      container.appendChild(App.buildDinRailSvg(w, h));
+      return;
+    }
+    if (App.isPanelIcon(iconKey)) {
+      const w = Number(node?.w) || PANEL_DEFAULT_W;
+      const h = Number(node?.h) || PANEL_DEFAULT_H;
+      container.appendChild(App.buildPanelSvg(w, h));
+      return;
+    }
     if (App.isBasicShapeIcon(iconKey)) {
       const shape = document.createElement('div');
       shape.className = `basic-shape-node basic-shape-${App.basicShapeType(iconKey)}`;
@@ -2420,20 +3033,249 @@ const App = {
 
     if (App.isCustomIcon(iconKey)) {
       const resolvedIcon = App.customIconForKey(iconKey, label);
-      if (!resolvedIcon) {
+      const override = App.normalizeIconOverride(node?.iconOverride);
+      if (!resolvedIcon && !override) {
         App.renderMissingCustomIcon(container, label);
         return;
       }
       const img = document.createElement('img');
       img.className = 'part-img';
-      img.src = App.customIconSrc(iconKey, label);
+      img.src = override || App.customIconSrc(iconKey, label);
       img.alt = label;
       img.draggable = false;
       container.appendChild(img);
+
+      // On the diagram, draw the selection outline around the actual opaque
+      // pixels of the PNG instead of the full square frame. (Part Creator does
+      // not pass `node` here, so it keeps the full-square frame.)
+      // Skip when an override image is in use — its metrics aren't cached.
+      if (node && !override) {
+        const metrics = App.ensureIconImageMetrics(iconKey);
+        if (metrics && metrics.contentBounds) {
+          const fw = App.clampNodeWidth(node.w, node);
+          const fh = App.clampNodeHeight(node.h, node);
+          const rect = App.containedImageContentRect(fw, fh, metrics);
+          const tight = rect.w < fw - 4 || rect.h < fh - 4 || rect.x > 2 || rect.y > 2;
+          if (tight) {
+            const outline = document.createElement('div');
+            outline.className = 'node-icon-outline';
+            outline.style.left = `${rect.x}px`;
+            outline.style.top = `${rect.y}px`;
+            outline.style.width = `${rect.w}px`;
+            outline.style.height = `${rect.h}px`;
+            container.appendChild(outline);
+          }
+        }
+      }
       return;
     }
 
     container.innerHTML = getBuiltinSvg(iconKey || 'generic');
+  },
+
+  buildDinRailSvg(width, height) {
+    const SVG = 'http://www.w3.org/2000/svg';
+    const w = Math.max(40, Number(width) || DINRAIL_DEFAULT_W);
+    const h = Math.max(16, Number(height) || DINRAIL_HEIGHT);
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('class', 'dinrail-svg');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const uid = App.uid('dinrail-grad');
+    const bodyGradId = `${uid}-body`;
+    const flangeGradId = `${uid}-flange`;
+    const defs = document.createElementNS(SVG, 'defs');
+    const bodyGrad = document.createElementNS(SVG, 'linearGradient');
+    bodyGrad.setAttribute('id', bodyGradId);
+    bodyGrad.setAttribute('x1', '0');
+    bodyGrad.setAttribute('y1', '0');
+    bodyGrad.setAttribute('x2', '0');
+    bodyGrad.setAttribute('y2', '1');
+    const bodyStops = [
+      ['0',   '#cfd3d6'],
+      ['0.45','#eef0f2'],
+      ['0.55','#e2e5e8'],
+      ['1',   '#a8adb2'],
+    ];
+    for (const [off, col] of bodyStops) {
+      const stop = document.createElementNS(SVG, 'stop');
+      stop.setAttribute('offset', off);
+      stop.setAttribute('stop-color', col);
+      bodyGrad.appendChild(stop);
+    }
+    defs.appendChild(bodyGrad);
+
+    const flangeGrad = document.createElementNS(SVG, 'linearGradient');
+    flangeGrad.setAttribute('id', flangeGradId);
+    flangeGrad.setAttribute('x1', '0');
+    flangeGrad.setAttribute('y1', '0');
+    flangeGrad.setAttribute('x2', '0');
+    flangeGrad.setAttribute('y2', '1');
+    const flangeStops = [
+      ['0', '#9aa0a6'],
+      ['1', '#c2c7cb'],
+    ];
+    for (const [off, col] of flangeStops) {
+      const stop = document.createElementNS(SVG, 'stop');
+      stop.setAttribute('offset', off);
+      stop.setAttribute('stop-color', col);
+      flangeGrad.appendChild(stop);
+    }
+    defs.appendChild(flangeGrad);
+    svg.appendChild(defs);
+
+    const flangeH = Math.max(3, Math.round(h * 0.18));
+    const slotInsetX = 14;
+    const slotPitch = 28;
+    const slotW = 16;
+    const slotH = Math.max(4, Math.round(h * 0.32));
+    const slotY = Math.round((h - slotH) / 2);
+
+    const body = document.createElementNS(SVG, 'rect');
+    body.setAttribute('x', '0');
+    body.setAttribute('y', '0');
+    body.setAttribute('width', String(w));
+    body.setAttribute('height', String(h));
+    body.setAttribute('rx', '2');
+    body.setAttribute('class', 'dinrail-body');
+    body.setAttribute('fill', `url(#${bodyGradId})`);
+    svg.appendChild(body);
+
+    const topFlange = document.createElementNS(SVG, 'rect');
+    topFlange.setAttribute('x', '0');
+    topFlange.setAttribute('y', '0');
+    topFlange.setAttribute('width', String(w));
+    topFlange.setAttribute('height', String(flangeH));
+    topFlange.setAttribute('class', 'dinrail-flange');
+    topFlange.setAttribute('fill', `url(#${flangeGradId})`);
+    svg.appendChild(topFlange);
+
+    const bottomFlange = document.createElementNS(SVG, 'rect');
+    bottomFlange.setAttribute('x', '0');
+    bottomFlange.setAttribute('y', String(h - flangeH));
+    bottomFlange.setAttribute('width', String(w));
+    bottomFlange.setAttribute('height', String(flangeH));
+    bottomFlange.setAttribute('class', 'dinrail-flange');
+    bottomFlange.setAttribute('fill', `url(#${flangeGradId})`);
+    svg.appendChild(bottomFlange);
+
+    const usableW = Math.max(0, w - slotInsetX * 2 - slotW);
+    const slotCount = Math.max(1, Math.floor(usableW / slotPitch) + 1);
+    const startX = Math.round((w - (slotCount - 1) * slotPitch - slotW) / 2);
+    for (let i = 0; i < slotCount; i += 1) {
+      const slot = document.createElementNS(SVG, 'rect');
+      slot.setAttribute('x', String(startX + i * slotPitch));
+      slot.setAttribute('y', String(slotY));
+      slot.setAttribute('width', String(slotW));
+      slot.setAttribute('height', String(slotH));
+      slot.setAttribute('rx', String(Math.round(slotH / 2)));
+      slot.setAttribute('class', 'dinrail-slot');
+      svg.appendChild(slot);
+    }
+
+    return svg;
+  },
+
+  buildPanelSvg(width, height) {
+    const SVG = 'http://www.w3.org/2000/svg';
+    const w = Math.max(PANEL_MIN_W, Number(width) || PANEL_DEFAULT_W);
+    const h = Math.max(PANEL_MIN_H, Number(height) || PANEL_DEFAULT_H);
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('class', 'panel-svg');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const uid = App.uid('panel-grad');
+    const bodyGradId = `${uid}-body`;
+    const sheenGradId = `${uid}-sheen`;
+    const defs = document.createElementNS(SVG, 'defs');
+
+    const bodyGrad = document.createElementNS(SVG, 'linearGradient');
+    bodyGrad.setAttribute('id', bodyGradId);
+    bodyGrad.setAttribute('x1', '0');
+    bodyGrad.setAttribute('y1', '0');
+    bodyGrad.setAttribute('x2', '0');
+    bodyGrad.setAttribute('y2', '1');
+    const bodyStops = [
+      ['0',    '#d4d7da'],
+      ['0.5',  '#c0c4c8'],
+      ['1',    '#a8acb0'],
+    ];
+    for (const [off, col] of bodyStops) {
+      const stop = document.createElementNS(SVG, 'stop');
+      stop.setAttribute('offset', off);
+      stop.setAttribute('stop-color', col);
+      bodyGrad.appendChild(stop);
+    }
+    defs.appendChild(bodyGrad);
+
+    const sheenGrad = document.createElementNS(SVG, 'linearGradient');
+    sheenGrad.setAttribute('id', sheenGradId);
+    sheenGrad.setAttribute('x1', '0');
+    sheenGrad.setAttribute('y1', '0');
+    sheenGrad.setAttribute('x2', '1');
+    sheenGrad.setAttribute('y2', '1');
+    const sheenStops = [
+      ['0',    'rgba(255,255,255,0.00)'],
+      ['0.35', 'rgba(255,255,255,0.28)'],
+      ['0.55', 'rgba(255,255,255,0.04)'],
+      ['1',    'rgba(255,255,255,0.00)'],
+    ];
+    for (const [off, col] of sheenStops) {
+      const stop = document.createElementNS(SVG, 'stop');
+      stop.setAttribute('offset', off);
+      stop.setAttribute('stop-color', col);
+      sheenGrad.appendChild(stop);
+    }
+    defs.appendChild(sheenGrad);
+    svg.appendChild(defs);
+
+    const radius = Math.max(6, Math.min(16, Math.round(Math.min(w, h) * 0.06)));
+
+    const body = document.createElementNS(SVG, 'rect');
+    body.setAttribute('x', '0.5');
+    body.setAttribute('y', '0.5');
+    body.setAttribute('width', String(w - 1));
+    body.setAttribute('height', String(h - 1));
+    body.setAttribute('rx', String(radius));
+    body.setAttribute('class', 'panel-body');
+    body.setAttribute('fill', `url(#${bodyGradId})`);
+    svg.appendChild(body);
+
+    const sheen = document.createElementNS(SVG, 'rect');
+    sheen.setAttribute('x', '0.5');
+    sheen.setAttribute('y', '0.5');
+    sheen.setAttribute('width', String(w - 1));
+    sheen.setAttribute('height', String(h - 1));
+    sheen.setAttribute('rx', String(radius));
+    sheen.setAttribute('fill', `url(#${sheenGradId})`);
+    sheen.setAttribute('pointer-events', 'none');
+    svg.appendChild(sheen);
+
+    const holeR = Math.max(2, Math.min(4, Math.round(Math.min(w, h) * 0.013)));
+    const insetX = Math.max(10, Math.round(radius * 0.9));
+    const insetY = Math.max(10, Math.round(radius * 0.9));
+
+    const drawHole = (cx, cy) => {
+      const hole = document.createElementNS(SVG, 'circle');
+      hole.setAttribute('cx', String(cx));
+      hole.setAttribute('cy', String(cy));
+      hole.setAttribute('r', String(holeR));
+      hole.setAttribute('class', 'panel-hole');
+      svg.appendChild(hole);
+    };
+
+    drawHole(insetX,     insetY);
+    drawHole(w - insetX, insetY);
+    drawHole(insetX,     h - insetY);
+    drawHole(w - insetX, h - insetY);
+
+    return svg;
   },
 
   renderMissingCustomIcon(container, label = '') {
@@ -2450,7 +3292,7 @@ const App = {
 
   basicShapeType(iconKey) {
     const raw = String(iconKey || '').split(':')[1] || 'rect';
-    return ['rect', 'pill', 'circle', 'textbox'].includes(raw) ? raw : 'rect';
+    return ['rect', 'pill', 'circle', 'textbox', 'dinrail', 'panel'].includes(raw) ? raw : 'rect';
   },
 
   isTextBoxNode(node) {
@@ -2476,6 +3318,8 @@ const App = {
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
     App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
     document.body.classList.remove('is-wiring');
     App.renderDiagram();
     App.renderSelectionTools();
@@ -2544,7 +3388,7 @@ const App = {
   },
 
   isConnectableNode(node) {
-    return !App.isTextBoxNode(node);
+    return !App.isTextBoxNode(node) && !App.isDinRailNode(node) && !App.isPanelNode(node);
   },
 
   nodeConnectors(node) {
@@ -2573,7 +3417,7 @@ const App = {
         App.state.wireDraft.connectorId,
       );
       const draftStartDir = App.endpointExitDir(App.state.wireDraft);
-      if (start) App.appendDraftWirePath(svg, start, App.state.draftPoint, draftStartDir);
+      if (start) App.appendDraftWirePath(svg, start, App.state.draftPoint, draftStartDir, App.state.draftVia);
     }
   },
 
@@ -2716,10 +3560,6 @@ const App = {
     hit.addEventListener('click', (event) => {
       event.stopPropagation();
       if (!App.state.editMode) return;
-      if (event.ctrlKey) {
-        App.insertWireBend(wire, event, start, end);
-        return;
-      }
       App.selectWire(wire.id);
     });
 
@@ -2910,21 +3750,23 @@ const App = {
       const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       handle.setAttribute('cx', point.x);
       handle.setAttribute('cy', point.y);
-      handle.setAttribute('r', 5);
+      handle.setAttribute('r', 8);
       handle.setAttribute('class', 'wire-bend-handle');
-      handle.setAttribute('title', 'Drag to move · Double-click to delete');
+      const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      titleEl.textContent = 'Drag to reshape · Click to remove this bend';
+      handle.appendChild(titleEl);
       handle.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
         event.preventDefault();
         event.stopPropagation();
-        App.state.draggingBend = { wireId: wire.id, index: idx };
+        App.state.draggingBend = {
+          wireId: wire.id,
+          index: idx,
+          startX: event.clientX,
+          startY: event.clientY,
+          moved: false,
+        };
         App.selectWire(wire.id);
-      });
-      handle.addEventListener('dblclick', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        wire.via = App.normalizeWireBends(wire.via);
-        wire.via.splice(idx, 1);
-        App.renderWires();
       });
       svg.appendChild(handle);
     });
@@ -2972,24 +3814,35 @@ const App = {
     App.selectWire(wire.id);
     App.expandWireVia(wire, fullRoute, startDir, endDir);
     const skipStart = startDir ? 2 : 1;
-    const viaLen = wire.via.length;
     const a = fullRoute[segIdx], b = fullRoute[segIdx + 1];
     const isHorizontal = Math.abs(a.y - b.y) < 2;
-    const viaIdxA = segIdx - skipStart;
-    const viaIdxB = segIdx + 1 - skipStart;
-    let resolvedA = (viaIdxA >= 0 && viaIdxA < viaLen) ? viaIdxA : -1;
-    let resolvedB = (viaIdxB >= 0 && viaIdxB < viaLen) ? viaIdxB : -1;
-    if (resolvedA === -1 && resolvedB === -1) {
-      resolvedA = wire.via.length;
+    let viaIdxA = segIdx - skipStart;
+    let viaIdxB = segIdx + 1 - skipStart;
+
+    // Both ends of the dragged segment must be vias so they translate together.
+    // If an end falls outside the via array (it lies on a stub), insert a new via.
+    if (viaIdxA < 0) {
+      wire.via.splice(0, 0, App.stageToBoard(a));
+      viaIdxA = 0;
+      viaIdxB += 1;
+    } else if (viaIdxA >= wire.via.length) {
       wire.via.push(App.stageToBoard(a));
-      resolvedB = wire.via.length;
-      wire.via.push(App.stageToBoard(b));
+      viaIdxA = wire.via.length - 1;
     }
+    if (viaIdxB < 0) {
+      wire.via.splice(0, 0, App.stageToBoard(b));
+      viaIdxB = 0;
+      viaIdxA += 1;
+    } else if (viaIdxB >= wire.via.length) {
+      wire.via.push(App.stageToBoard(b));
+      viaIdxB = wire.via.length - 1;
+    }
+
     App.state.draggingBend = {
       wireId: wire.id,
       isSegment: true,
-      viaIdxA: resolvedA,
-      viaIdxB: resolvedB,
+      viaIdxA,
+      viaIdxB,
       isHorizontal,
       initVia: wire.via.map(v => ({ ...v })),
       startX: event.clientX,
@@ -3018,11 +3871,20 @@ const App = {
     svg.appendChild(circle);
   },
 
-  appendDraftWirePath(svg, start, end, startDir = null) {
+  appendDraftWirePath(svg, start, end, startDir = null, via = []) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', App.wirePathD(start, end, [], startDir, null));
+    path.setAttribute('d', App.wirePathD(start, end, via, startDir, null));
     path.setAttribute('class', 'wire-path wire-draft');
     svg.appendChild(path);
+    for (const pt of App.normalizeWireBends(via)) {
+      const stagePt = App.boardToStage(App.visualBoardPoint(pt));
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', stagePt.x);
+      dot.setAttribute('cy', stagePt.y);
+      dot.setAttribute('r', 4);
+      dot.setAttribute('class', 'wire-draft-waypoint');
+      svg.appendChild(dot);
+    }
   },
 
   endpointExitDir(endpoint) {
@@ -3140,8 +4002,8 @@ const App = {
 
   nodeStageBounds(node) {
     const pos = App.visualNodePosition(node);
-    const w = App.clampNodeWidth(node.w);
-    const h = App.clampNodeHeight(node.h);
+    const w = App.clampNodeWidth(node.w, node);
+    const h = App.clampNodeHeight(node.h, node);
     const tl = App.boardToStage({ x: pos.x, y: pos.y });
     const br = App.boardToStage({ x: pos.x + w, y: pos.y + h });
     return { left: tl.x, top: tl.y, right: br.x, bottom: br.y };
@@ -3242,33 +4104,6 @@ const App = {
     return App.nearestPointOnPolyline(route, point)?.along ?? 0;
   },
 
-  insertWireBend(wire, event, start = null, end = null) {
-    const stagePoint = App.pointInStage(event);
-    const wireStart = start || App.endpointPoint(wire.from);
-    const wireEnd = end || App.endpointPoint(wire.to);
-    if (!wireStart || !wireEnd) return;
-    const route = App.wireRoutePoints(
-      wireStart,
-      wireEnd,
-      wire.via,
-      App.endpointExitDir(wire.from),
-      App.endpointExitDir(wire.to),
-      App.wireStubLengths(wire),
-    );
-    const nearest = App.nearestPointOnPolyline(route, stagePoint);
-    if (!nearest) return;
-
-    const via = App.normalizeWireBends(wire.via);
-    const viaDistances = via.map((point) => (
-      App.routeDistanceToPoint(route, App.boardToStage(App.visualBoardPoint(point)))
-    ));
-    const insertAt = viaDistances.findIndex((distance) => distance > nearest.along);
-    via.splice(insertAt === -1 ? via.length : insertAt, 0, App.stageToBoard(nearest.point));
-    wire.via = via;
-    App.selectWire(wire.id);
-    App.renderWires();
-  },
-
   nearestWireAtStage(stagePoint, maxDistance = WIRE_HIT_TOLERANCE) {
     let best = null;
     for (const wire of App.state.diagram.wires || []) {
@@ -3293,21 +4128,32 @@ const App = {
   },
 
   handleDiagramStageClick(event) {
+    if (App.state._suppressNextStageClick) {
+      App.state._suppressNextStageClick = false;
+      return;
+    }
     if (event.defaultPrevented) return;
     if (App.state.activeCanvasTool === 'pan') return;
     if (App.nodeHitTest(event) || event.target.closest?.('.connector-dot')) return;
     if (event.target.closest?.('.part-info-panel')) return;
+
+    if (App.state.editMode && App.state.wireDraft && App.state.draftPersistent) {
+      event.preventDefault();
+      event.stopPropagation();
+      const stagePoint = App.pointInStage(event);
+      const boardPoint = App.snapViaToBoardConnectors(App.stageToBoard(stagePoint));
+      App.state.draftVia.push(boardPoint);
+      App.state.draftPoint = stagePoint;
+      App.renderWires();
+      return;
+    }
 
     if (App.state.editMode && !App.state.wireDraft && !App.state.wireDragActive) {
       const nearest = App.nearestWireAtStage(App.pointInStage(event));
       if (nearest) {
         event.preventDefault();
         event.stopPropagation();
-        if (event.ctrlKey) {
-          App.insertWireBend(nearest.wire, event);
-        } else {
-          App.selectWire(nearest.wire.id);
-        }
+        App.selectWire(nearest.wire.id);
         return;
       }
     }
@@ -3344,8 +4190,8 @@ const App = {
     if (!node || !connector) return null;
 
     const pos = App.visualNodePosition(node);
-    const nodeW = App.clampNodeWidth(node.w);
-    const nodeH = App.clampNodeHeight(node.h);
+    const nodeW = App.clampNodeWidth(node.w, node);
+    const nodeH = App.clampNodeHeight(node.h, node);
     const centerX = pos.x + nodeW / 2;
     const centerY = pos.y + nodeH / 2;
 
@@ -3409,10 +4255,108 @@ const App = {
     };
   },
 
+  startMarqueeSelect(event) {
+    if (!App.state.editMode) return;
+    const stagePoint = App.pointInStage(event);
+    App.state.marquee = {
+      pointerId: event.pointerId,
+      startStage: stagePoint,
+      currentStage: stagePoint,
+      startBoard: App.stageToBoard(stagePoint),
+      additive: Boolean(event.ctrlKey || event.metaKey),
+    };
+    App.capturePointer(App.el('diagram-stage'), event.pointerId);
+    document.body.classList.add('is-marquee-selecting');
+    App.renderMarquee();
+  },
+
+  updateMarquee(event) {
+    if (!App.state.marquee) return;
+    App.state.marquee.currentStage = App.pointInStage(event);
+    App.renderMarquee();
+  },
+
+  renderMarquee() {
+    const stage = App.el('diagram-stage');
+    let rect = stage?.querySelector('.marquee-rect');
+    const m = App.state.marquee;
+    if (!m) {
+      if (rect) rect.remove();
+      return;
+    }
+    if (!rect) {
+      rect = document.createElement('div');
+      rect.className = 'marquee-rect';
+      stage.appendChild(rect);
+    }
+    const x = Math.min(m.startStage.x, m.currentStage.x);
+    const y = Math.min(m.startStage.y, m.currentStage.y);
+    const w = Math.abs(m.currentStage.x - m.startStage.x);
+    const h = Math.abs(m.currentStage.y - m.startStage.y);
+    rect.style.left = `${x}px`;
+    rect.style.top = `${y}px`;
+    rect.style.width = `${w}px`;
+    rect.style.height = `${h}px`;
+  },
+
+  finishMarquee(event) {
+    const m = App.state.marquee;
+    if (!m) return;
+    const endStage = event ? App.pointInStage(event) : m.currentStage;
+    const endBoard = App.stageToBoard(endStage);
+    const sel = {
+      left: Math.min(m.startBoard.x, endBoard.x),
+      top: Math.min(m.startBoard.y, endBoard.y),
+      right: Math.max(m.startBoard.x, endBoard.x),
+      bottom: Math.max(m.startBoard.y, endBoard.y),
+    };
+    const dragged = (sel.right - sel.left) >= 4 && (sel.bottom - sel.top) >= 4;
+    const additive = m.additive;
+    App.state.marquee = null;
+    document.body.classList.remove('is-marquee-selecting');
+    App.renderMarquee();
+    App.state._suppressNextStageClick = true;
+    if (!dragged) return;
+    if (!additive) {
+      App.state.selectedNodeIds.clear();
+      App.state.selectedNodeId = null;
+    }
+    App.state.selectedWireId = null;
+    App.state.selectedGroupId = null;
+    for (const node of App.state.diagram.nodes || []) {
+      const b = App.nodeBounds(node);
+      const overlaps = !(b.right < sel.left || b.left > sel.right || b.bottom < sel.top || b.top > sel.bottom);
+      if (overlaps) App.state.selectedNodeIds.add(String(node.id));
+    }
+    if (App.state.selectedNodeIds.size === 1) {
+      App.state.selectedNodeId = [...App.state.selectedNodeIds][0];
+    } else {
+      App.state.selectedNodeId = null;
+    }
+    App.renderDiagram();
+    App.renderSelectionTools();
+  },
+
+  cancelMarquee() {
+    if (!App.state.marquee) return;
+    App.state.marquee = null;
+    document.body.classList.remove('is-marquee-selecting');
+    App.renderMarquee();
+  },
+
   startWireDrag(event, nodeId, connectorId) {
+    if (App.state.wireDraft && App.state.draftPersistent && !App.state.wireDragActive) {
+      App.state.suppressConnectorClick = true;
+      setTimeout(() => { App.state.suppressConnectorClick = false; }, 0);
+      App.finishPersistentDraft({ nodeId, connectorId });
+      return;
+    }
     App.state.wireDraft = { nodeId, connectorId };
     App.state.wireDragActive = true;
     App.state.draftPoint = App.pointInStage(event);
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
+    App.state.draftDownClient = { x: event.clientX, y: event.clientY };
     document.body.classList.add('is-wiring');
     App.renderWires();
   },
@@ -3420,11 +4364,29 @@ const App = {
   finishWireDrag(event) {
     const from = App.state.wireDraft;
     App.state.wireDragActive = false;
+
+    const down = App.state.draftDownClient;
+    const moved = down ? Math.hypot(event.clientX - down.x, event.clientY - down.y) : 0;
+    const NO_MOVE_THRESHOLD = 5;
+    if (from && moved < NO_MOVE_THRESHOLD) {
+      App.state.draftPersistent = true;
+      App.state.draftPoint = App.pointInStage(event);
+      App.state.suppressConnectorClick = true;
+      setTimeout(() => { App.state.suppressConnectorClick = false; }, 0);
+      document.body.classList.add('is-wiring');
+      App.toast('Click to add waypoints, then click another connector to finish. Esc cancels, Backspace removes a waypoint.', 'info', 2400);
+      App.renderWires();
+      return;
+    }
+
     App.state.suppressConnectorClick = true;
     document.body.classList.remove('is-wiring');
     setTimeout(() => { App.state.suppressConnectorClick = false; }, 0);
     App.state.wireDraft = null;
     App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
+    App.state.draftDownClient = null;
     if (!from) {
       App.renderWires();
       return;
@@ -3448,8 +4410,42 @@ const App = {
     App.renderDiagram();
   },
 
-  createWire(startEndpoint, endEndpoint) {
+  finishPersistentDraft(target) {
+    const from = App.state.wireDraft;
+    const via = App.state.draftVia.slice();
+    App.state.wireDraft = null;
+    App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
+    App.state.draftDownClient = null;
+    document.body.classList.remove('is-wiring');
+    if (!from || !target) {
+      App.renderDiagram();
+      return;
+    }
+    if (from.nodeId === target.nodeId && from.connectorId === target.connectorId) {
+      App.renderDiagram();
+      return;
+    }
+    App.createWire(from, { nodeId: target.nodeId, connectorId: target.connectorId }, via);
+    App.renderDiagram();
+  },
+
+  cancelWireDraft() {
+    App.state.wireDraft = null;
+    App.state.wireDragActive = false;
+    App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
+    App.state.draftDownClient = null;
+    document.body.classList.remove('is-wiring');
+    App.renderDiagram();
+  },
+
+  createWire(startEndpoint, endEndpoint, via = []) {
     const wireEnds = App.orientWireEnds(startEndpoint, endEndpoint);
+    const swapped = JSON.stringify(wireEnds.from) !== JSON.stringify(startEndpoint);
+    const wireVia = App.normalizeWireBends(swapped ? [...via].reverse() : via);
     const exists = App.state.diagram.wires.some((wire) => (
       JSON.stringify(wire.from) === JSON.stringify(wireEnds.from) &&
       JSON.stringify(wire.to) === JSON.stringify(wireEnds.to)
@@ -3459,7 +4455,7 @@ const App = {
       App.state.diagram.wires.push({
         id: App.uid('wire'),
         ...wireEnds,
-        via: [],
+        via: wireVia,
         type: 'power',
         lineStyle: 'solid',
       });
@@ -3470,27 +4466,21 @@ const App = {
     if (!App.state.wireDraft) {
       App.state.wireDraft = { nodeId, connectorId };
       App.state.draftPoint = App.connectorPoint(nodeId, connectorId);
+      App.state.draftVia = [];
+      App.state.draftPersistent = true;
       document.body.classList.add('is-wiring');
-      App.toast('Select another connector to finish the wire.', 'info', 1600);
+      App.toast('Click to add waypoints, then click another connector to finish. Esc cancels, Backspace removes a waypoint.', 'info', 2400);
       App.renderWires();
       return;
     }
 
     const from = App.state.wireDraft;
     if (from.nodeId === nodeId && from.connectorId === connectorId) {
-      App.state.wireDraft = null;
-      App.state.draftPoint = null;
-      document.body.classList.remove('is-wiring');
-      App.renderDiagram();
+      App.cancelWireDraft();
       return;
     }
 
-    App.createWire(from, { nodeId, connectorId });
-
-    App.state.wireDraft = null;
-    App.state.draftPoint = null;
-    document.body.classList.remove('is-wiring');
-    App.renderDiagram();
+    App.finishPersistentDraft({ nodeId, connectorId });
   },
 
   orientWireEnds(a, b) {
@@ -3526,6 +4516,32 @@ const App = {
   findGroupForNode(nodeId) {
     const id = String(nodeId);
     return (App.state.diagram.groups || []).find((g) => g.nodeIds.includes(id)) || null;
+  },
+
+  captureInternalWireVia(nodeIds) {
+    const set = new Set([...nodeIds].map(String));
+    const snapshot = new Map();
+    for (const wire of App.state.diagram.wires || []) {
+      const fromId = String(wire.from?.nodeId || '');
+      const toId = String(wire.to?.nodeId || '');
+      if (!set.has(fromId) || !set.has(toId)) continue;
+      const via = App.normalizeWireBends(wire.via);
+      if (!via.length) continue;
+      snapshot.set(wire.id, via.map((pt) => ({ x: pt.x, y: pt.y })));
+    }
+    return snapshot;
+  },
+
+  translateInternalWireVia(snapshot, moveX, moveY) {
+    if (!snapshot || !snapshot.size) return;
+    for (const [wireId, initialVia] of snapshot) {
+      const wire = (App.state.diagram.wires || []).find((w) => w.id === wireId);
+      if (!wire) continue;
+      wire.via = initialVia.map((pt) => ({
+        x: Math.round(pt.x + moveX),
+        y: Math.round(pt.y + moveY),
+      }));
+    }
   },
 
   groupBounds(group) {
@@ -3714,6 +4730,7 @@ const App = {
         const node = App.findNode(id);
         return [id, { x: Number(node?.x) || 0, y: Number(node?.y) || 0 }];
       })),
+      wireVia: App.captureInternalWireVia(group.nodeIds),
       moved: false,
     };
     App.renderDiagram();
@@ -3724,17 +4741,31 @@ const App = {
     const node = App.findNode(nodeId);
     if (!node) return;
     if (group) {
-      if (!App.state.selectedNodeIds.has(String(nodeId))) {
-        App.state.selectedNodeIds.add(String(nodeId));
-      }
-      App.state.selectedNodeId = String(nodeId);
+      const id = String(nodeId);
+      const wasNewlyAdded = !App.state.selectedNodeIds.has(id);
+      if (wasNewlyAdded) App.state.selectedNodeIds.add(id);
+      App.state.selectedNodeId = id;
       App.state.selectedWireId = null;
+      App.state.selectedGroupId = null;
+      // Show the highlight immediately on shift-click, not only after a drag.
+      App.renderDiagram();
+      App.renderSelectionTools?.();
+      // Tell the upcoming click handler not to toggle this node back off.
+      if (wasNewlyAdded) App.state._suppressShiftClickToggle = true;
     } else {
       App.selectNode(nodeId);
     }
-    const groupIds = group && App.state.selectedNodeIds.size > 1
+    const baseIds = group && App.state.selectedNodeIds.size > 1
       ? [...App.state.selectedNodeIds].filter((id) => App.findNode(id))
       : [String(nodeId)];
+    const idSet = new Set(baseIds.map(String));
+    for (const id of baseIds) {
+      const item = App.findNode(id);
+      if (App.isDinRailNode(item)) {
+        for (const pid of App.findRailPassengers(item)) idSet.add(pid);
+      }
+    }
+    const groupIds = [...idSet];
     App.state.draggingNode = {
       nodeId,
       groupIds,
@@ -3746,6 +4777,7 @@ const App = {
         const item = App.findNode(id);
         return [id, { x: Number(item?.x) || 0, y: Number(item?.y) || 0 }];
       })),
+      wireVia: groupIds.length > 1 ? App.captureInternalWireVia(groupIds) : null,
     };
     App.capturePointer(event.currentTarget, event.pointerId);
   },
@@ -3767,8 +4799,8 @@ const App = {
     const node = App.findNode(nodeId);
     if (!node) return;
     App.selectNode(nodeId);
-    const nodeW = App.clampNodeWidth(node.w);
-    const nodeH = App.clampNodeHeight(node.h);
+    const nodeW = App.clampNodeWidth(node.w, node);
+    const nodeH = App.clampNodeHeight(node.h, node);
     App.state.resizingNode = {
       nodeId,
       handle,
@@ -3830,8 +4862,8 @@ const App = {
       y = resize.nodeY + dy;
     }
 
-    const clampedW = App.clampNodeWidth(w);
-    const clampedH = App.clampNodeHeight(h);
+    const clampedW = App.clampNodeWidth(w, node);
+    const clampedH = App.clampNodeHeight(h, node);
     if (resize.handle.includes('w')) x = resize.nodeX + resize.nodeW - clampedW;
     if (resize.handle.includes('n')) y = resize.nodeY + resize.nodeH - clampedH;
 
@@ -3909,8 +4941,8 @@ const App = {
 
     for (const node of nodes) {
       const pos = App.visualNodePosition(node);
-      const w = App.clampNodeWidth(node.w);
-      const h = App.clampNodeHeight(node.h);
+      const w = App.clampNodeWidth(node.w, node);
+      const h = App.clampNodeHeight(node.h, node);
       minX = Math.min(minX, pos.x);
       minY = Math.min(minY, pos.y);
       maxX = Math.max(maxX, pos.x + w);
@@ -4203,6 +5235,12 @@ const App = {
             if (drag.viaIdxB >= 0) wire.via[drag.viaIdxB] = { x: drag.initVia[drag.viaIdxB].x + dBoard + snapDx, y: drag.initVia[drag.viaIdxB].y };
           }
         } else {
+          if (!drag.moved) {
+            const dx = event.clientX - (drag.startX ?? event.clientX);
+            const dy = event.clientY - (drag.startY ?? event.clientY);
+            if (Math.hypot(dx, dy) < 4) return;
+            drag.moved = true;
+          }
           wire.via = App.normalizeWireBends(wire.via);
           const rawBoard = App.stageToBoard(App.pointInStage(event));
           wire.via[drag.index] = App.snapViaToBoardConnectors(rawBoard);
@@ -4237,6 +5275,7 @@ const App = {
         node.x = Math.round(start.x + moveX);
         node.y = Math.round(start.y + moveY);
       }
+      App.translateInternalWireVia(drag.wireVia, moveX, moveY);
       App.state.snapGuides = [];
       App.renderDiagram();
       return;
@@ -4258,6 +5297,7 @@ const App = {
           item.x = Math.round(start.x + moveX);
           item.y = Math.round(start.y + moveY);
         }
+        App.translateInternalWireVia(drag.wireVia, moveX, moveY);
         App.state.snapGuides = [];
         App.renderDiagram();
         return;
@@ -4315,6 +5355,21 @@ const App = {
       App.finishWireDrag(event);
     }
 
+    if (
+      App.state.draggingBend &&
+      !App.state.draggingBend.isSegment &&
+      !App.state.draggingBend.moved
+    ) {
+      const drag = App.state.draggingBend;
+      const wire = App.findWire(drag.wireId);
+      if (wire && Number.isInteger(drag.index)) {
+        wire.via = App.normalizeWireBends(wire.via);
+        if (drag.index >= 0 && drag.index < wire.via.length) {
+          wire.via.splice(drag.index, 1);
+        }
+      }
+    }
+
     if (wasDraggingGroup && App.state.draggingGroup?.moved) App.markDiagramDirty?.();
     App.state.draggingNode = null;
     App.state.draggingLabel = null;
@@ -4351,6 +5406,8 @@ const App = {
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
     App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
     document.body.classList.remove('is-wiring');
     App.renderDiagram();
     App.renderSelectionTools();
@@ -4369,6 +5426,8 @@ const App = {
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
     App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
     document.body.classList.remove('is-wiring');
     App.renderDiagram();
     App.renderSelectionTools();
@@ -4384,6 +5443,8 @@ const App = {
     App.state.activeToolbarAction = null;
     App.state.wireDraft = null;
     App.state.draftPoint = null;
+    App.state.draftVia = [];
+    App.state.draftPersistent = false;
     document.body.classList.remove('is-wiring');
     App.renderDiagram();
     App.renderSelectionTools();
@@ -4418,12 +5479,8 @@ const App = {
       const labelInput = App.el('selected-node-label');
       labelInput.value = node.label;
       labelInput.disabled = false;
-      const isConnectable = App.isConnectableNode(node);
-      const connectorCount = App.nodeConnectorCount(node);
-      App.el('selected-node-connector-count').value = String(isConnectable ? connectorCount : MIN_CONNECTOR_COUNT);
-      App.el('selected-node-connector-count').disabled = !isConnectable;
-      App.el('selected-node-connector-count-readout').textContent = isConnectable ? String(connectorCount) : 'None';
       App.renderConnectorEditor(node);
+      App.bindNodeIconOverrideUi(node);
       App.el('delete-selected-node-btn').disabled = false;
       App.el('clear-selection-btn').disabled = false;
       App.el('add-selected-subdiagram-btn').disabled = false;
@@ -4495,14 +5552,13 @@ const App = {
 
       // Reset disabled states for when items become selected
       ['selected-node-label',
-       'selected-node-connector-count',
+       'selected-node-icon-replace-btn','selected-node-icon-reset-btn',
        'delete-selected-node-btn','clear-selection-btn','add-selected-subdiagram-btn',
        'selected-wire-type','selected-wire-style','selected-wire-color','selected-wire-label',
        'clear-wire-color-btn','delete-selected-wire-btn'].forEach((id) => {
         const el = App.el(id);
         if (el) el.disabled = true;
       });
-      App.el('selected-node-connector-count-readout').textContent = String(DEFAULT_CONNECTOR_COUNT);
       const connectorList = App.el('selected-node-connectors-list');
       if (connectorList) connectorList.innerHTML = '';
     }
@@ -4580,15 +5636,25 @@ const App = {
     }
     const connectors = App.editableNodeConnectors(node);
     for (const [idx, connector] of connectors.entries()) {
-      const row = document.createElement('label');
+      const row = document.createElement('div');
       row.className = 'connector-editor-row';
 
       const swatch = document.createElement('span');
       swatch.className = `connector-editor-swatch role-${connector.role || 'neutral'}`;
 
-      const name = document.createElement('span');
-      name.className = 'connector-editor-id';
-      name.textContent = connector.id;
+      const roleSelect = document.createElement('select');
+      roleSelect.className = 'tool-input connector-editor-role';
+      roleSelect.title = 'Connector type';
+      for (const [value, label] of [['input', 'Input'], ['output', 'Output'], ['neutral', 'Neutral']]) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        roleSelect.appendChild(opt);
+      }
+      roleSelect.value = ['input', 'output', 'neutral'].includes(connector.role) ? connector.role : 'neutral';
+      roleSelect.addEventListener('change', (event) => {
+        App.updateSelectedConnectorRole(idx, event.target.value);
+      });
 
       const input = document.createElement('input');
       input.type = 'text';
@@ -4600,9 +5666,54 @@ const App = {
         App.updateSelectedConnectorLabel(idx, event.target.value);
       });
 
-      row.append(swatch, name, input);
+      row.append(swatch, roleSelect, input);
       list.appendChild(row);
     }
+  },
+
+  bindNodeIconOverrideUi(node) {
+    const replaceBtn = App.el('selected-node-icon-replace-btn');
+    const resetBtn = App.el('selected-node-icon-reset-btn');
+    const fileInput = App.el('selected-node-icon-input');
+    if (!replaceBtn || !resetBtn || !fileInput) return;
+
+    const supportsOverride = App.isCustomIcon(node?.icon);
+    const hasOverride = !!App.normalizeIconOverride(node?.iconOverride);
+    replaceBtn.disabled = !supportsOverride;
+    resetBtn.disabled = !supportsOverride || !hasOverride;
+
+    replaceBtn.onclick = () => {
+      if (replaceBtn.disabled) return;
+      fileInput.value = '';
+      fileInput.click();
+    };
+
+    resetBtn.onclick = () => {
+      if (resetBtn.disabled) return;
+      App.setSelectedNodeIconOverride('');
+    };
+
+    fileInput.onchange = (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (file.size > 2_500_000) {
+        App.toast?.('Image too large (max ~2.5 MB).', 'error');
+        fileInput.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (!App.normalizeIconOverride(dataUrl)) {
+          App.toast?.('Unsupported image format.', 'error');
+          return;
+        }
+        App.setSelectedNodeIconOverride(dataUrl);
+      };
+      reader.onerror = () => App.toast?.('Could not read image file.', 'error');
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    };
   },
 
   renderNodeLinksEditor(node) {
@@ -4789,19 +5900,9 @@ const App = {
   updateSelectedNodeSize(axis, value) {
     const node = App.findNode(App.state.selectedNodeId);
     if (!node) return;
-    if (axis === 'w') node.w = App.clampNodeWidth(value);
-    if (axis === 'h') node.h = App.clampNodeHeight(value);
+    if (axis === 'w') node.w = App.clampNodeWidth(value, node);
+    if (axis === 'h') node.h = App.clampNodeHeight(value, node);
     node.labelOffset = App.normalizeLabelOffset(node.labelOffset, node);
-    App.renderDiagram();
-    App.renderSelectionTools();
-  },
-
-  updateSelectedNodeConnectorCount(value) {
-    const node = App.findNode(App.state.selectedNodeId);
-    if (!node || !App.isConnectableNode(node)) return;
-    const count = App.connectorCountValue(value);
-    App.replaceNodeConnectorsUniform(node, count);
-    App.el('selected-node-connector-count-readout').textContent = String(count);
     App.renderDiagram();
     App.renderSelectionTools();
   },
@@ -4814,6 +5915,17 @@ const App = {
     connectors[index].label = String(value || '').trim().slice(0, 40);
     App.renderDiagram();
     App.renderWires();
+  },
+
+  updateSelectedConnectorRole(index, value) {
+    const node = App.findNode(App.state.selectedNodeId);
+    if (!node || !App.isConnectableNode(node)) return;
+    const connectors = App.editableNodeConnectors(node);
+    if (!connectors[index]) return;
+    const role = ['input', 'output', 'neutral'].includes(value) ? value : 'neutral';
+    connectors[index].role = role;
+    App.renderDiagram();
+    App.renderSelectionTools();
   },
 
   updateSelectedTextStyle(patch) {
@@ -4858,6 +5970,55 @@ const App = {
   getPartForNode(node) {
     if (!node?.icon?.startsWith('custom:')) return null;
     return App.customIconForKey(node.icon, node.label);
+  },
+
+  normalizeIconOverride(value) {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return '';
+    // Only accept inline image data URLs. Cap at ~2.5 MB to avoid bloating saved diagrams.
+    if (!/^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/i.test(raw)) return '';
+    if (raw.length > 2_500_000) return '';
+    return raw;
+  },
+
+  connectorFingerprint(connectors) {
+    const list = Array.isArray(connectors) ? connectors : [];
+    return list.map((c) => [
+      String(c.id || ''),
+      Number(c.x).toFixed(4),
+      Number(c.y).toFixed(4),
+      String(c.role || 'neutral'),
+      String(c.label || ''),
+      Number(c.size) || 5,
+      String(c.color || ''),
+    ].join('|')).join('~');
+  },
+
+  isNodeCustomized(node) {
+    if (!node || !App.isCustomIcon(node.icon)) return false;
+    if (App.normalizeIconOverride(node.iconOverride)) return true;
+    const part = App.getPartForNode(node);
+    if (!part) return false;
+    const partName = String(part.name || '').trim();
+    const nodeLabel = String(node.label || '').trim();
+    if (nodeLabel && partName && nodeLabel !== partName) return true;
+    const baseConn = App.connectorFingerprint(App.cloneConnectors(part.connectors));
+    const nodeConn = App.connectorFingerprint(App.cloneConnectors(node.connectors));
+    if (baseConn !== nodeConn) return true;
+    return false;
+  },
+
+  setSelectedNodeIconOverride(dataUrl) {
+    const node = App.findNode(App.state.selectedNodeId);
+    if (!node) return;
+    const normalized = App.normalizeIconOverride(dataUrl);
+    if (normalized) {
+      node.iconOverride = normalized;
+    } else {
+      delete node.iconOverride;
+    }
+    App.renderDiagram();
+    App.renderSelectionTools();
   },
 
   renderPartInfoPanel(node) {
@@ -5834,7 +6995,7 @@ const App = {
 
   addBasicShapeToDiagram(shapeType) {
     App.setCanvasTool('select');
-    const type = ['rect', 'pill', 'circle', 'textbox'].includes(shapeType) ? shapeType : 'rect';
+    const type = ['rect', 'pill', 'circle', 'textbox', 'dinrail', 'panel'].includes(shapeType) ? shapeType : 'rect';
     const rect = App.el('diagram-stage').getBoundingClientRect();
     const jitter = (App.state._addCount++ % 7) * 22;
     const center = App.stageToBoard({ x: rect.width / 2, y: rect.height / 2 });
@@ -5844,6 +7005,10 @@ const App = {
         ? { w: 180, h: 54 }
       : type === 'pill'
         ? { w: 156, h: 68 }
+      : type === 'dinrail'
+        ? { w: DINRAIL_DEFAULT_W, h: DINRAIL_HEIGHT }
+      : type === 'panel'
+        ? { w: PANEL_DEFAULT_W, h: PANEL_DEFAULT_H }
         : { w: 142, h: 76 };
     const label = type === 'circle'
       ? 'Circle'
@@ -5851,7 +7016,12 @@ const App = {
         ? 'Text'
       : type === 'pill'
         ? 'Process'
+      : type === 'dinrail'
+        ? 'DIN rail'
+      : type === 'panel'
+        ? 'Panel'
         : 'Shape';
+    const noConnectors = type === 'textbox' || type === 'dinrail' || type === 'panel';
     const node = {
       id: App.uid('node'),
       label,
@@ -5861,7 +7031,7 @@ const App = {
       w: size.w,
       h: size.h,
       labelOffset: App.defaultLabelOffset(size),
-      connectors: type === 'textbox' ? [] : App.cloneConnectors(SHAPE_CONNECTORS_8),
+      connectors: noConnectors ? [] : App.cloneConnectors(SHAPE_CONNECTORS_8),
       textStyle: type === 'textbox' ? App.normalizeTextStyle(DEFAULT_TEXT_STYLE) : App.normalizeTextStyle(),
     };
     App.state.diagram.nodes.push(node);
@@ -5869,17 +7039,48 @@ const App = {
     App.renderDiagramTree();
   },
 
+  computeAutoNodeSize(part) {
+    const connectors = (part && part.connectors) || [];
+    const counts = { left: 0, right: 0, top: 0, bottom: 0 };
+    for (const conn of connectors) {
+      const side = App.connectorSide(conn);
+      if (side && counts[side] !== undefined) counts[side] += 1;
+    }
+    const VLABEL_H = 22;
+    const HLABEL_W = 52;
+    const sideMax = Math.max(counts.left, counts.right);
+    const endMax = Math.max(counts.top, counts.bottom);
+    let h = Math.max(DEFAULT_NODE_H, sideMax * VLABEL_H + 24);
+    let w = Math.max(DEFAULT_NODE_W, endMax * HLABEL_W + 24);
+
+    const metrics = App.isCustomIcon(part?.icon) ? App.ensureIconImageMetrics(part.icon) : null;
+    if (metrics && metrics.width > 0 && metrics.height > 0) {
+      const aspect = metrics.width / metrics.height;
+      if (h * aspect > w) {
+        w = Math.round(h * aspect);
+      } else if (w / aspect > h) {
+        h = Math.round(w / aspect);
+      }
+    }
+
+    return {
+      w: App.clampNodeWidth(w),
+      h: App.clampNodeHeight(h),
+    };
+  },
+
   addPartToDiagram(part, boardPoint) {
     if (!part) return;
+    const size = App.computeAutoNodeSize(part);
     const node = {
       id: App.uid('node'),
       label: part.name,
       icon: part.icon,
-      x: Math.round(boardPoint.x),
-      y: Math.round(boardPoint.y),
-      w: DEFAULT_NODE_W,
-      h: DEFAULT_NODE_H,
-      labelOffset: App.defaultLabelOffset({ h: DEFAULT_NODE_H }),
+      x: Math.round(boardPoint.x - (size.w - DEFAULT_NODE_W) / 2),
+      y: Math.round(boardPoint.y - (size.h - DEFAULT_NODE_H) / 2),
+      w: size.w,
+      h: size.h,
+      labelOffset: App.defaultLabelOffset({ h: size.h }),
       connectors: App.cloneConnectors(part.connectors),
     };
 
@@ -5896,17 +7097,20 @@ const App = {
 
   serializableNodeCopy(node) {
     if (!node) return null;
-    return {
+    const copy = {
       label: String(node.label || 'Part'),
       icon: String(node.icon || 'generic'),
-      w: App.clampNodeWidth(node.w),
-      h: App.clampNodeHeight(node.h),
+      w: App.clampNodeWidth(node.w, node),
+      h: App.clampNodeHeight(node.h, node),
       labelOffset: App.normalizeLabelOffset(node.labelOffset, node),
       connectors: App.nodeConnectors(node),
       textStyle: App.normalizeTextStyle(node.textStyle),
       description: String(node.description || ''),
       links: App.normalizeLinks(node.links),
     };
+    const iconOverride = App.normalizeIconOverride(node.iconOverride);
+    if (iconOverride) copy.iconOverride = iconOverride;
+    return copy;
   },
 
   copySelectedNode() {
@@ -5924,11 +7128,11 @@ const App = {
     const baseX = source ? Number(source.x) || 0 : App.stageToBoard({
       x: App.el('diagram-stage').getBoundingClientRect().width / 2,
       y: App.el('diagram-stage').getBoundingClientRect().height / 2,
-    }).x - App.clampNodeWidth(App.state.copiedNode.w) / 2;
+    }).x - App.clampNodeWidth(App.state.copiedNode.w, App.state.copiedNode) / 2;
     const baseY = source ? Number(source.y) || 0 : App.stageToBoard({
       x: App.el('diagram-stage').getBoundingClientRect().width / 2,
       y: App.el('diagram-stage').getBoundingClientRect().height / 2,
-    }).y - App.clampNodeHeight(App.state.copiedNode.h) / 2;
+    }).y - App.clampNodeHeight(App.state.copiedNode.h, App.state.copiedNode) / 2;
     const copy = App.state.copiedNode;
     const node = {
       id: App.uid('node'),
@@ -5936,14 +7140,16 @@ const App = {
       icon: copy.icon,
       x: Math.round(baseX + offset),
       y: Math.round(baseY + offset),
-      w: App.clampNodeWidth(copy.w),
-      h: App.clampNodeHeight(copy.h),
+      w: App.clampNodeWidth(copy.w, copy),
+      h: App.clampNodeHeight(copy.h, copy),
       labelOffset: App.normalizeLabelOffset(copy.labelOffset, copy),
       connectors: App.isTextBoxNode(copy) ? [] : App.cloneConnectors(copy.connectors),
       textStyle: App.normalizeTextStyle(copy.textStyle),
       description: copy.description || '',
       links: App.normalizeLinks(copy.links),
     };
+    const pastedOverride = App.normalizeIconOverride(copy.iconOverride);
+    if (pastedOverride) node.iconOverride = pastedOverride;
     App.state.diagram.nodes.push(node);
     App.state.pasteCount += 1;
     App.selectNode(node.id);
@@ -6026,6 +7232,9 @@ const App = {
       App.el('diagram-stage')?.classList.remove('is-hand-tool');
       App.state.wireDraft = null;
       App.state.draftPoint = null;
+      App.state.draftVia = [];
+      App.state.draftPersistent = false;
+      App.state.draftDownClient = null;
       App.state.draggingNode = null;
       App.state.draggingWireEnd = null;
       App.state.wireDragActive = false;
@@ -6120,7 +7329,6 @@ const App = {
       App.el('creator-name-input').value = file.name.replace(/\.[^.]+$/, '');
     }
     App.renderCreator();
-    App.renderCreatorDotsList();
   },
 
   isSupportedPartImageFile(file) {
@@ -6295,6 +7503,13 @@ const App = {
     App.renderCreatorDocFolderSelect();
     const folders = App.creatorDocFolderNames();
 
+    const totalCount = docs.length + existingDocs.length;
+    const countEl = App.el('creator-docs-count');
+    if (countEl) {
+      countEl.textContent = String(totalCount);
+      countEl.hidden = totalCount === 0;
+    }
+
     if (!docs.length && !existingDocs.length && folders.length === 1) {
       const empty = document.createElement('div');
       empty.className = 'creator-doc-empty';
@@ -6335,35 +7550,63 @@ const App = {
 
       for (const doc of folderExistingDocs) {
         const row = document.createElement('div');
-        row.className = 'creator-doc-row';
-        const name = document.createElement('button');
-        name.type = 'button';
+        row.className = 'creator-doc-row is-saved';
+        if (doc.is_primary_image) row.classList.add('is-primary-image');
+
+        const name = document.createElement('a');
         name.className = 'creator-doc-open';
+        name.href = `/api/icon-documents/${doc.id}?v=${encodeURIComponent(doc.uploaded_at || '')}`;
+        name.target = '_blank';
+        name.rel = 'noopener noreferrer';
         name.textContent = doc.filename;
-        name.title = doc.filename;
-        name.addEventListener('click', () => App.openIconDocument(doc.id));
+        name.title = doc.is_primary_image
+          ? `${doc.filename} — auto-synced from the part icon on every save`
+          : `Open ${doc.filename} in a new tab`;
+
+        const meta = document.createElement('div');
+        meta.className = 'creator-doc-meta';
         const size = document.createElement('span');
+        size.className = 'creator-doc-size';
         size.textContent = App.formatBytes(doc.size_bytes || 0);
         const tag = document.createElement('span');
         tag.className = 'creator-doc-saved-tag';
-        tag.textContent = 'Saved';
+        tag.textContent = doc.is_primary_image ? 'Part icon' : 'Saved';
+        meta.append(size, tag);
+
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'creator-doc-remove';
-        remove.title = `Delete ${doc.filename}`;
+        remove.title = doc.is_primary_image
+          ? 'Delete (will be recreated on next save)'
+          : `Delete ${doc.filename}`;
         remove.textContent = 'x';
         remove.addEventListener('click', () => App.deleteCreatorExistingDoc(doc));
-        row.append(name, size, tag, remove);
+
+        row.append(name, remove, meta);
         rows.appendChild(row);
       }
 
       for (const doc of folderDocs) {
         const file = doc.file;
         const row = document.createElement('div');
-        row.className = 'creator-doc-row';
+        row.className = 'creator-doc-row is-pending';
+
         const name = document.createElement('span');
-        name.textContent = file.name;
+        name.className = 'creator-doc-name';
+        const pendingTag = document.createElement('span');
+        pendingTag.className = 'creator-doc-pending-tag';
+        pendingTag.textContent = 'New';
+        pendingTag.title = 'Will upload when you save the part';
+        const nameText = document.createElement('span');
+        nameText.className = 'creator-doc-name-text';
+        nameText.textContent = file.name;
+        nameText.title = file.name;
+        name.append(pendingTag, nameText);
+
+        const meta = document.createElement('div');
+        meta.className = 'creator-doc-meta';
         const size = document.createElement('span');
+        size.className = 'creator-doc-size';
         size.textContent = App.formatBytes(file.size);
         const move = document.createElement('select');
         move.className = 'creator-doc-folder-select';
@@ -6375,6 +7618,7 @@ const App = {
         }
         move.value = folder;
         move.addEventListener('change', (event) => App.updateCreatorDocFolder(doc.id, event.target.value));
+        meta.append(size, move);
 
         const remove = document.createElement('button');
         remove.type = 'button';
@@ -6383,7 +7627,7 @@ const App = {
         remove.textContent = 'x';
         remove.addEventListener('click', () => App.removeCreatorDoc(doc.id));
 
-        row.append(name, size, move, remove);
+        row.append(name, remove, meta);
         rows.appendChild(row);
       }
 
@@ -6453,7 +7697,6 @@ const App = {
 
     wrap.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.creator-handle') || e.target.closest('.creator-dot')) return;
-      if (App.state.creator.addingDot) return;
       e.preventDefault();
       e.stopPropagation();
       App.startCreatorImgDrag(e);
@@ -6469,42 +7712,63 @@ const App = {
       });
     }
 
-    preview.addEventListener('click', (e) => {
-      if (!App.state.creator.addingDot) return;
-      if (e.target.closest('.creator-dot')) return;
+    preview.addEventListener('dragover', (e) => {
+      if (!App.state.creator.dragPlacingDot) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      preview.classList.add('is-adding-dot');
+    });
+    preview.addEventListener('dragleave', (e) => {
+      if (e.target !== preview) return;
+      preview.classList.remove('is-adding-dot');
+    });
+    preview.addEventListener('drop', (e) => {
+      if (!App.state.creator.dragPlacingDot) return;
+      e.preventDefault();
+      preview.classList.remove('is-adding-dot');
+      const src = App.state.creator.objectUrl || App.state.creator.imageUrl;
+      if (!src) { App.toast('Load a PNG first.', 'warn'); return; }
       const raw = App.screenToLayerFraction(e.clientX, e.clientY);
       const frac = e.shiftKey ? raw : App.snapCreatorFraction(raw);
-      App.addCreatorDotAtFraction(frac.x, frac.y, { autoSelect: false });
+      App.addCreatorDotAtFraction(frac.x, frac.y, { autoSelect: true });
     });
   },
 
-  setCreatorAddingDot(adding) {
-    App.state.creator.addingDot = !!adding;
-    const preview = App.el('creator-preview');
-    const btn = App.el('creator-add-dot-btn');
-    if (preview) preview.classList.toggle('is-adding-dot', !!adding);
-    if (btn) {
-      btn.classList.toggle('is-adding', !!adding);
-      btn.textContent = adding ? '✕ Done adding' : '+ Add';
+  setCreatorDotToolbarEnabled(enabled) {
+    for (const id of ['creator-dot-label', 'creator-dot-role', 'creator-dot-color']) {
+      const el = App.el(id);
+      if (el) el.disabled = !enabled;
     }
+    const del = App.el('creator-dot-delete-btn');
+    if (del) del.disabled = !enabled;
+    const label = App.el('creator-dot-label');
+    if (label) label.placeholder = enabled ? 'Connection label' : 'Select a dot to name it';
   },
 
   initCreatorDotControls() {
-    App.el('creator-add-dot-btn').addEventListener('click', () => {
-      if (App.state.creator.addingDot) {
-        App.setCreatorAddingDot(false);
-        return;
-      }
-      const src = App.state.creator.objectUrl || App.state.creator.imageUrl;
-      if (!src) { App.toast('Load a PNG first.', 'warn'); return; }
-      App.setCreatorAddingDot(true);
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && App.state.creator.addingDot) {
-        App.setCreatorAddingDot(false);
-      }
-    });
+    const dragBtn = App.el('creator-dot-drag');
+    if (dragBtn) {
+      dragBtn.addEventListener('dragstart', (e) => {
+        const src = App.state.creator.objectUrl || App.state.creator.imageUrl;
+        if (!src) {
+          e.preventDefault();
+          App.toast('Load a PNG first.', 'warn');
+          return;
+        }
+        App.state.creator.dragPlacingDot = true;
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'copy';
+          e.dataTransfer.setData('text/plain', 'connection-dot');
+        }
+        dragBtn.classList.add('is-dragging');
+      });
+      dragBtn.addEventListener('dragend', () => {
+        App.state.creator.dragPlacingDot = false;
+        dragBtn.classList.remove('is-dragging');
+        const preview = App.el('creator-preview');
+        if (preview) preview.classList.remove('is-adding-dot');
+      });
+    }
 
     App.el('creator-dot-delete-btn').addEventListener('click', App.deleteActiveCreatorDot);
 
@@ -6512,16 +7776,15 @@ const App = {
       if (!confirm('Reset connection dots to defaults?')) return;
       App.state.creator.connectors = DEFAULT_CONNECTORS.map((c) => ({ ...c }));
       App.state.creator.activeConnectorId = null;
-      App.el('creator-dot-props').classList.add('hidden');
-      App.el('creator-dot-delete-btn').disabled = true;
+      App.state.creator.selectedConnectorIds = new Set();
+      App.setCreatorDotToolbarEnabled(false);
+      App.updateCreatorMultiEditState();
       App.renderCreatorDots();
-      App.renderCreatorDotsList();
     });
 
     App.el('creator-dot-label').addEventListener('input', App.updateActiveCreatorDot);
     App.el('creator-dot-role').addEventListener('change', App.updateActiveCreatorDot);
     App.el('creator-dot-color').addEventListener('input', App.updateActiveCreatorDot);
-    App.el('creator-dot-size').addEventListener('input', App.updateActiveCreatorDot);
   },
 
   screenToLayerFraction(clientX, clientY) {
@@ -6613,11 +7876,13 @@ const App = {
     if (!layer) return;
     layer.innerHTML = '';
     const hit = 22;
+    const selectedIds = App.state.creator.selectedConnectorIds || new Set();
     for (const dot of App.state.creator.connectors || []) {
       const isActive = dot.id === App.state.creator.activeConnectorId;
-      const size = Math.max(4, dot.size || 8);
+      const isSelected = selectedIds.has(dot.id);
+      const size = 1;
       const el = document.createElement('div');
-      el.className = `creator-dot role-${dot.role || 'neutral'}${isActive ? ' is-active' : ''}`;
+      el.className = `creator-dot role-${dot.role || 'neutral'}${isActive ? ' is-active' : ''}${isSelected ? ' is-selected' : ''}`;
       App.positionCreatorDotElement(el, dot);
       el.style.width = `${hit}px`;
       el.style.height = `${hit}px`;
@@ -6631,150 +7896,154 @@ const App = {
       core.style.width = `${size}px`;
       core.style.height = `${size}px`;
       core.style.borderColor = dot.color || '';
-      if (isActive) core.style.background = dot.color || '';
+      if (isActive || isSelected) core.style.background = dot.color || '';
       el.appendChild(core);
 
       if (dot.label) {
         const lbl = document.createElement('span');
         lbl.className = 'creator-dot-label';
+        lbl.dataset.side = App.clamp01(dot.x) > 0.5 ? 'left' : 'right';
         lbl.textContent = dot.label;
         core.appendChild(lbl);
       }
       el.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
-        App.selectCreatorDot(dot.id);
-        App.startCreatorDotDrag(e, dot.id, el);
+        const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+        App.selectCreatorDot(dot.id, { additive });
+        if (!additive) App.startCreatorDotDrag(e, dot.id, el);
       });
       layer.appendChild(el);
     }
   },
 
-  renderCreatorDotsList() {
-    const list = App.el('creator-dots-list');
-    if (!list) return;
-    list.innerHTML = '';
-    for (const dot of App.state.creator.connectors || []) {
-      const isActive = dot.id === App.state.creator.activeConnectorId;
-      const row = document.createElement('div');
-      row.className = `creator-dot-list-row${isActive ? ' is-active' : ''}`;
-      const indicator = document.createElement('span');
-      indicator.className = 'creator-dot-list-dot';
-      indicator.style.borderColor = dot.color || 'var(--border-2)';
-      indicator.style.background = isActive ? (dot.color || 'var(--accent)') : 'transparent';
-      const name = document.createElement('span');
-      name.className = 'creator-dot-list-name';
-      name.textContent = dot.label || dot.id;
-      name.title = 'Double-click to rename';
-      const role = document.createElement('span');
-      role.className = 'creator-dot-list-role';
-      role.textContent = dot.role || 'neutral';
-      row.append(indicator, name, role);
-      row.addEventListener('click', (e) => {
-        if (e.target.classList.contains('creator-dot-list-name-input')) return;
-        App.selectCreatorDot(dot.id);
-      });
-      name.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        App.beginRenameCreatorDot(dot.id, name);
-      });
-      list.appendChild(row);
+  selectCreatorDot(id, { additive = false } = {}) {
+    if (!(App.state.creator.selectedConnectorIds instanceof Set)) {
+      App.state.creator.selectedConnectorIds = new Set();
     }
-  },
-
-  beginRenameCreatorDot(dotId, nameEl) {
-    const dot = (App.state.creator.connectors || []).find((c) => c.id === dotId);
-    if (!dot) return;
-    App.selectCreatorDot(dotId);
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'creator-dot-list-name-input';
-    input.value = dot.label || '';
-    input.maxLength = 50;
-    nameEl.replaceWith(input);
-    input.focus();
-    input.select();
-    let done = false;
-    const commit = (save) => {
-      if (done) return;
-      done = true;
-      if (save) {
-        dot.label = input.value;
-        const labelInput = App.el('creator-dot-label');
-        if (labelInput && App.state.creator.activeConnectorId === dotId) labelInput.value = dot.label;
-        App.renderCreatorDots();
+    const sel = App.state.creator.selectedConnectorIds;
+    if (additive) {
+      if (sel.has(id)) {
+        sel.delete(id);
+        if (App.state.creator.activeConnectorId === id) {
+          const next = sel.size ? [...sel][sel.size - 1] : null;
+          App.state.creator.activeConnectorId = next;
+        }
+      } else {
+        sel.add(id);
+        App.state.creator.activeConnectorId = id;
       }
-      App.renderCreatorDotsList();
-    };
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); commit(true); }
-      else if (e.key === 'Escape') { e.preventDefault(); commit(false); }
-    });
-    input.addEventListener('blur', () => commit(true));
-    input.addEventListener('click', (e) => e.stopPropagation());
-  },
-
-  selectCreatorDot(id) {
-    App.state.creator.activeConnectorId = id;
-    App.setCreatorAddingDot(false);
-    const dot = (App.state.creator.connectors || []).find((c) => c.id === id);
+    } else {
+      sel.clear();
+      sel.add(id);
+      App.state.creator.activeConnectorId = id;
+    }
+    const activeId = App.state.creator.activeConnectorId;
+    const dot = activeId ? (App.state.creator.connectors || []).find((c) => c.id === activeId) : null;
     if (dot) {
       App.el('creator-dot-label').value = dot.label || '';
       App.el('creator-dot-role').value = dot.role || 'neutral';
       App.el('creator-dot-color').value = dot.color || '#7ea1c4';
-      App.el('creator-dot-size').value = dot.size || 8;
-      App.el('creator-dot-props').classList.remove('hidden');
-      App.el('creator-dot-delete-btn').disabled = false;
+      App.setCreatorDotToolbarEnabled(true);
+    } else {
+      App.setCreatorDotToolbarEnabled(false);
     }
+    App.updateCreatorMultiEditState();
     App.refreshCreatorDotActiveState();
-    App.renderCreatorDotsList();
+  },
+
+  updateCreatorMultiEditState() {
+    const sel = App.state.creator.selectedConnectorIds || new Set();
+    const count = sel.size;
+    const labelInput = App.el('creator-dot-label');
+    const badge = App.el('creator-dot-multi-badge');
+    if (badge) {
+      if (count > 1) {
+        badge.textContent = `Editing ${count} dots`;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+    if (labelInput) {
+      if (count > 1) {
+        labelInput.disabled = true;
+        labelInput.placeholder = 'Select a single dot to rename';
+      } else if (count === 1) {
+        labelInput.disabled = false;
+        labelInput.placeholder = 'Connection label';
+      }
+      // count === 0 case is handled by setCreatorDotToolbarEnabled
+    }
+    const deleteBtn = App.el('creator-dot-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.textContent = count > 1 ? `Delete (${count})` : 'Delete';
+    }
   },
 
   refreshCreatorDotActiveState() {
     const layer = App.el('creator-dot-layer');
     if (!layer) return;
     const activeId = App.state.creator.activeConnectorId;
+    const selectedIds = App.state.creator.selectedConnectorIds || new Set();
     for (const el of layer.querySelectorAll('.creator-dot')) {
       const dot = (App.state.creator.connectors || []).find((c) => c.id === el.dataset.dotId);
       if (!dot) continue;
       const isActive = el.dataset.dotId === activeId;
+      const isSelected = selectedIds.has(el.dataset.dotId);
       el.classList.toggle('is-active', isActive);
+      el.classList.toggle('is-selected', isSelected);
       const core = el.querySelector('.creator-dot-core');
-      if (core) core.style.background = isActive ? (dot.color || '') : '';
+      if (core) core.style.background = (isActive || isSelected) ? (dot.color || '') : '';
     }
   },
 
-  updateActiveCreatorDot() {
-    const id = App.state.creator.activeConnectorId;
-    if (!id) return;
-    const dot = (App.state.creator.connectors || []).find((c) => c.id === id);
-    if (!dot) return;
-    dot.label = App.el('creator-dot-label').value;
-    dot.role = App.el('creator-dot-role').value;
-    dot.color = App.el('creator-dot-color').value;
-    dot.size = Math.max(4, Math.min(24, parseInt(App.el('creator-dot-size').value, 10) || 8));
+  updateActiveCreatorDot(e) {
+    const activeId = App.state.creator.activeConnectorId;
+    if (!activeId) return;
+    const selectedIds = App.state.creator.selectedConnectorIds || new Set();
+    const ids = selectedIds.size ? [...selectedIds] : [activeId];
+    const newLabel = App.el('creator-dot-label').value;
+    const newRole = App.el('creator-dot-role').value;
+    const newColor = App.el('creator-dot-color').value;
+    // Identify which field triggered the change so we don't overwrite unrelated fields on bulk edit
+    const field = e && e.target ? e.target.id : null;
+    for (const id of ids) {
+      const dot = (App.state.creator.connectors || []).find((c) => c.id === id);
+      if (!dot) continue;
+      if (ids.length === 1) {
+        dot.label = newLabel;
+        dot.role = newRole;
+        dot.color = newColor;
+      } else {
+        // Bulk edit: only apply the changed field; never overwrite labels in bulk
+        if (field === 'creator-dot-role') dot.role = newRole;
+        else if (field === 'creator-dot-color') dot.color = newColor;
+      }
+    }
     App.renderCreatorDots();
-    App.renderCreatorDotsList();
   },
 
   deleteActiveCreatorDot() {
-    const id = App.state.creator.activeConnectorId;
-    if (!id) return;
-    App.state.creator.connectors = (App.state.creator.connectors || []).filter((c) => c.id !== id);
+    const selectedIds = App.state.creator.selectedConnectorIds || new Set();
+    const ids = selectedIds.size
+      ? new Set(selectedIds)
+      : (App.state.creator.activeConnectorId ? new Set([App.state.creator.activeConnectorId]) : new Set());
+    if (!ids.size) return;
+    App.state.creator.connectors = (App.state.creator.connectors || []).filter((c) => !ids.has(c.id));
     App.state.creator.activeConnectorId = null;
-    App.el('creator-dot-props').classList.add('hidden');
-    App.el('creator-dot-delete-btn').disabled = true;
+    App.state.creator.selectedConnectorIds = new Set();
+    App.setCreatorDotToolbarEnabled(false);
+    App.updateCreatorMultiEditState();
     App.renderCreatorDots();
-    App.renderCreatorDotsList();
   },
 
   addCreatorDotAtFraction(x, y, { autoSelect = true } = {}) {
     const id = App.uid('dot');
-    const dot = { id, x: App.clamp01(x), y: App.clamp01(y), role: 'neutral', label: '', size: 5, color: '#7ea1c4' };
+    const dot = { id, x: App.clamp01(x), y: App.clamp01(y), role: 'neutral', label: '', size: 1, color: '#7ea1c4' };
     if (!Array.isArray(App.state.creator.connectors)) App.state.creator.connectors = [];
     App.state.creator.connectors.push(dot);
     App.renderCreatorDots();
     if (autoSelect) App.selectCreatorDot(id);
-    else App.renderCreatorDotsList();
   },
 
   startCreatorDotDrag(startEvent, dotId, dotEl) {
@@ -6815,7 +8084,8 @@ const App = {
       links: App.normalizeLinks(icon.links),
       connectors: App.cloneConnectors(icon.connectors),
       activeConnectorId: null,
-      addingDot: false,
+      selectedConnectorIds: new Set(),
+      dragPlacingDot: false,
       imageTransform: { tx: 0, ty: 0, scale: 1, rotation: 0 },
       imageMetrics: App.ensureIconImageMetrics(`custom:${icon.id}`),
     };
@@ -6833,12 +8103,12 @@ const App = {
     App.el('creator-file-name').textContent = icon.filename ? `Current PNG: ${icon.filename}` : 'Current PNG loaded';
     App.el('creator-link-url-input').value = '';
     App.el('creator-link-label-input').value = '';
-    App.setCreatorAddingDot(false);
+    App.setCreatorDotToolbarEnabled(false);
+    App.updateCreatorMultiEditState();
     App.renderCreator();
     App.renderCreatorLinks();
     App.renderCreatorDocFolderSelect();
     App.renderCreatorDocs();
-    App.renderCreatorDotsList();
     App.renderCreatorPartsList();
   },
 
@@ -6847,14 +8117,23 @@ const App = {
     if (!list) return;
     list.innerHTML = '';
     const search = App.state.creatorPartSearch.trim().toLowerCase();
-    const icons = [...(App.state.customIcons || [])]
-      .filter((icon) => {
-        const haystack = `${icon.name} ${icon.part_number || ''} ${icon.folder || ''}`.toLowerCase();
-        return !search || haystack.includes(search);
-      })
-      .sort((a, b) => (a.folder || '').localeCompare(b.folder || '') || a.name.localeCompare(b.name));
+    const groups = new Map();
 
-    if (!icons.length) {
+    for (const icon of App.state.customIcons || []) {
+      const haystack = [
+        icon.name,
+        icon.part_number,
+        icon.folder,
+        icon.description,
+        ...((icon.documents || []).map((d) => `${d.folder || ''} ${d.filename || ''}`)),
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (search && !haystack.includes(search)) continue;
+      const folder = icon.folder || 'Unsorted';
+      if (!groups.has(folder)) groups.set(folder, []);
+      groups.get(folder).push(icon);
+    }
+
+    if (!groups.size) {
       const empty = document.createElement('div');
       empty.className = 'creator-doc-empty';
       empty.textContent = search ? 'No matching parts' : 'No custom parts saved yet';
@@ -6862,33 +8141,75 @@ const App = {
       return;
     }
 
-    for (const icon of icons) {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'creator-part-row';
-      row.classList.toggle('is-active', Number(icon.id) === Number(App.state.creator.selectedIconId));
+    const sortedFolders = [...groups.keys()].sort((a, b) => {
+      if (a === 'Unsorted') return -1;
+      if (b === 'Unsorted') return 1;
+      return a.localeCompare(b);
+    });
 
-      const preview = document.createElement('span');
-      preview.className = 'creator-part-preview';
-      const img = document.createElement('img');
-      img.src = App.customIconSrc(`custom:${icon.id}`);
-      img.alt = '';
-      preview.appendChild(img);
+    const activeId = Number(App.state.creator.selectedIconId);
 
-      const text = document.createElement('span');
-      text.className = 'creator-part-text';
+    for (const folder of sortedFolders) {
+      const icons = groups.get(folder).sort((a, b) => a.name.localeCompare(b.name));
+      const hasActive = icons.some((icon) => Number(icon.id) === activeId);
+      const group = document.createElement('details');
+      group.className = 'creator-part-folder';
+      group.open = Boolean(search) || hasActive || App.state.expandedCreatorFolders.has(folder);
+
+      const header = document.createElement('summary');
+      header.className = 'creator-part-folder-header';
       const name = document.createElement('span');
-      name.className = 'creator-part-name';
-      name.textContent = icon.name;
-      const meta = document.createElement('span');
-      meta.className = 'creator-part-meta';
-      const refs = (icon.documents || []).length;
-      meta.textContent = `${icon.part_number || 'No part number'} - ${refs} refs`;
-      text.append(name, meta);
+      name.className = 'creator-part-folder-name';
+      name.textContent = folder;
+      const count = document.createElement('span');
+      count.className = 'creator-part-folder-count';
+      count.textContent = String(icons.length);
+      header.append(name, count);
+      group.appendChild(header);
 
-      row.append(preview, text);
-      row.addEventListener('click', () => App.populateCreatorFromIcon(icon));
-      list.appendChild(row);
+      group.addEventListener('toggle', () => {
+        if (search) return;
+        if (group.open) {
+          App.state.expandedCreatorFolders.add(folder);
+        } else {
+          App.state.expandedCreatorFolders.delete(folder);
+        }
+      });
+
+      const items = document.createElement('div');
+      items.className = 'creator-part-folder-items';
+
+      for (const icon of icons) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'creator-part-row';
+        row.classList.toggle('is-active', Number(icon.id) === activeId);
+
+        const preview = document.createElement('span');
+        preview.className = 'creator-part-preview';
+        const img = document.createElement('img');
+        img.src = App.customIconSrc(`custom:${icon.id}`);
+        img.alt = '';
+        preview.appendChild(img);
+
+        const text = document.createElement('span');
+        text.className = 'creator-part-text';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'creator-part-name';
+        nameEl.textContent = icon.name;
+        const meta = document.createElement('span');
+        meta.className = 'creator-part-meta';
+        const refs = (icon.documents || []).length;
+        meta.textContent = `${icon.part_number || 'No part number'} - ${refs} refs`;
+        text.append(nameEl, meta);
+
+        row.append(preview, text);
+        row.addEventListener('click', () => App.populateCreatorFromIcon(icon));
+        items.appendChild(row);
+      }
+
+      group.appendChild(items);
+      list.appendChild(group);
     }
   },
 
@@ -6973,7 +8294,8 @@ const App = {
       links: [],
       connectors: DEFAULT_CONNECTORS.map((c) => ({ ...c })),
       activeConnectorId: null,
-      addingDot: false,
+      selectedConnectorIds: new Set(),
+      dragPlacingDot: false,
       imageTransform: { tx: 0, ty: 0, scale: 1, rotation: 0 },
       imageMetrics: null,
     };
@@ -6987,14 +8309,12 @@ const App = {
     App.el('creator-file-name').textContent = 'No PNG selected';
     App.el('creator-link-url-input').value = '';
     App.el('creator-link-label-input').value = '';
-    App.el('creator-dot-props').classList.add('hidden');
-    App.el('creator-dot-delete-btn').disabled = true;
-    App.setCreatorAddingDot(false);
+    App.setCreatorDotToolbarEnabled(false);
+    App.updateCreatorMultiEditState();
     App.renderCreatorDocFolderSelect();
     App.renderCreator();
     App.renderCreatorDocs();
     App.renderCreatorLinks();
-    App.renderCreatorDotsList();
     App.renderCreatorPartsList();
   },
 
@@ -7020,6 +8340,24 @@ const App = {
     App.el('diagram-stage').addEventListener('click', App.handleDiagramStageClick);
     App.el('diagram-stage').addEventListener('pointerdown', (event) => {
       const handDrag = App.state.activeCanvasTool === 'pan' && event.button === 0;
+      if (
+        event.button === 0 &&
+        event.shiftKey &&
+        App.state.editMode &&
+        !App.state.wireDraft &&
+        !handDrag
+      ) {
+        const target = event.target;
+        const isEmpty =
+          target === App.el('diagram-stage') ||
+          target === App.el('wire-layer') ||
+          target === App.el('node-layer');
+        if (isEmpty && !App.nodeHitTest(event) && !target.closest?.('.connector-dot')) {
+          event.preventDefault();
+          App.startMarqueeSelect(event);
+          return;
+        }
+      }
       if (event.button !== 1 && !handDrag) return;
       event.preventDefault();
       App.startPan(event);
@@ -7033,7 +8371,12 @@ const App = {
         App.state.draftPoint = App.pointInStage(event);
         App.renderWires();
       }
+      if (App.state.marquee) App.updateMarquee(event);
     });
+    App.el('diagram-stage').addEventListener('pointerup', (event) => {
+      if (App.state.marquee) App.finishMarquee(event);
+    });
+    App.el('diagram-stage').addEventListener('pointercancel', () => App.cancelMarquee());
     App.el('diagram-stage').addEventListener('dragover', (event) => {
       if (!App.state.editMode) return;
       event.preventDefault();
@@ -7081,7 +8424,6 @@ const App = {
     App.el('parts-expand-all-btn').addEventListener('click', () => App.setPartFoldersOpen(true));
     App.el('parts-collapse-all-btn').addEventListener('click', () => App.setPartFoldersOpen(false));
     App.el('selected-node-label').addEventListener('input', (event) => App.updateSelectedNodeLabel(event.target.value));
-    App.el('selected-node-connector-count').addEventListener('input', (event) => App.updateSelectedNodeConnectorCount(event.target.value));
     App.el('delete-selected-node-btn').addEventListener('click', App.deleteSelectedNode);
     App.el('clear-selection-btn').addEventListener('click', App.clearSelection);
     App.el('delete-selected-wire-btn').addEventListener('click', App.deleteSelectedWire);
@@ -7091,23 +8433,31 @@ const App = {
     App.el('selected-wire-label').addEventListener('input', (event) => App.updateSelectedWireLabel(event.target.value));
     App.el('clear-wire-color-btn').addEventListener('click', App.clearSelectedWireColor);
     App.el('add-selected-subdiagram-btn').addEventListener('click', () => App.createSubdiagram(App.findNode(App.state.selectedNodeId)));
-    App.el('text-font-family').addEventListener('change', (event) => App.updateSelectedTextStyle({ fontFamily: event.target.value }));
-    App.el('text-font-size').addEventListener('input', (event) => App.updateSelectedTextStyle({ fontSize: event.target.value }));
-    App.el('text-bold-btn').addEventListener('click', () => {
+    App.el('text-font-family')?.addEventListener('change', (event) => App.updateSelectedTextStyle({ fontFamily: event.target.value }));
+    App.el('text-font-size')?.addEventListener('input', (event) => App.updateSelectedTextStyle({ fontSize: event.target.value }));
+    App.el('text-bold-btn')?.addEventListener('click', () => {
       const node = App.findNode(App.state.selectedNodeId);
       const style = App.normalizeTextStyle(node?.textStyle);
       App.updateSelectedTextStyle({ bold: !style.bold });
     });
-    App.el('text-italic-btn').addEventListener('click', () => {
+    App.el('text-italic-btn')?.addEventListener('click', () => {
       const node = App.findNode(App.state.selectedNodeId);
       const style = App.normalizeTextStyle(node?.textStyle);
       App.updateSelectedTextStyle({ italic: !style.italic });
     });
-    App.el('text-color-input').addEventListener('input', (event) => App.updateSelectedTextStyle({ color: event.target.value }));
+    App.el('text-color-input')?.addEventListener('input', (event) => App.updateSelectedTextStyle({ color: event.target.value }));
 
     App.el('print-btn').addEventListener('click', App.printDiagram);
     App.el('fv-close').addEventListener('click', App.closeViewer);
     document.addEventListener('click', (e) => { if (App._ctxMenu && !App._ctxMenu.contains(e.target)) App.hideContextMenu(); });
+
+    // Suppress the browser's native right-click menu globally so the app feels native.
+    // Allow it on text inputs so copy/paste still works.
+    document.addEventListener('contextmenu', (e) => {
+      const t = e.target;
+      if (t.closest?.('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
 
     // Single document-level handler — prevents browser menu and shows custom one
     document.addEventListener('contextmenu', (e) => {
@@ -7258,16 +8608,30 @@ const App = {
         return;
       }
       if (event.key === 'Escape' && App.state.wireDraft) {
-        App.state.wireDraft = null;
-        App.state.wireDragActive = false;
-        App.state.draftPoint = null;
-        document.body.classList.remove('is-wiring');
-        App.renderDiagram();
+        App.cancelWireDraft();
       }
-      if (event.key === 'Delete' && App.state.editMode && !App.isTextInputTarget(event.target)) {
-        if (App.state.selectedWireId) App.deleteSelectedWire();
-        else if (App.state.selectedNodeId) App.deleteSelectedNode();
-        else if (App.state.selectedGroupId) App.deleteGroup(App.state.selectedGroupId);
+      if (
+        (event.key === 'Backspace' || event.key === 'Delete') &&
+        App.state.wireDraft &&
+        App.state.draftPersistent &&
+        App.state.draftVia.length &&
+        !App.isTextInputTarget(event.target)
+      ) {
+        event.preventDefault();
+        App.state.draftVia.pop();
+        App.renderWires();
+      }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && App.state.editMode && !App.isTextInputTarget(event.target)) {
+        if (App.state.selectedWireId) {
+          event.preventDefault();
+          App.deleteSelectedWire();
+        } else if (App.state.selectedNodeId) {
+          event.preventDefault();
+          App.deleteSelectedNode();
+        } else if (App.state.selectedGroupId) {
+          event.preventDefault();
+          App.deleteGroup(App.state.selectedGroupId);
+        }
       }
     });
   },
